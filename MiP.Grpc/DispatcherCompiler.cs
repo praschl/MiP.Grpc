@@ -23,45 +23,37 @@ namespace MiP.Grpc
             public const string Response = "{Response}";
         }
 
+        private const string Base = "Base";
         public const string ClassCode = @"
 public class {Class} : {BaseClass}
 {{Members}}
 ";
 
         public const string ConstructorCode = @"
-    private readonly IServiceProvider _serviceProvider;
-    public {Constructor}(IServiceProvider serviceProvider) 
+    private readonly IDispatcher _dispatcher;
+    public {Constructor}(IDispatcher dispatcher, IServiceProvider serviceProvider)
     {
-        if (serviceProvider == null)
-            throw new ArgumentNullException(nameof(serviceProvider));
-
-        _serviceProvider = serviceProvider;
+        _dispatcher = dispatcher ?? new Dispatcher(serviceProvider);
     }
 ";
 
         public const string MethodCode = @"
-    public async override Task<{Response}> {Method}({Request} response, ServerCallContext context)
+    public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
-        System.Console.WriteLine(""  ################  Task<{Response}> {Method}({Request} response) "");
+        return await _dispatcher.Dispatch<{Request}, {Response}>(request, context);
 
-        var query = (IQuery<{Request}, {Response}>) _serviceProvider.GetService(typeof(IQuery<{Request}, {Response}>));
+        //var query = (IQuery<{Request}, {Response}>) _serviceProvider.GetService(typeof(IQuery<{Request}, {Response}>));
 
-        if (query == null)
-            throw new InvalidOperationException("" ##########  Query was not found"");
+        //if (query == null)
+        //    throw new InvalidOperationException(""IQuery<{Request}, {Response}> could not be resolved."");
 
-        return await query.RunAsync(response);
+        //return await query.RunAsync(request, context);
     }
 ";
-
-        private const string Base = "Base";
 
         public Type CompileDispatcher(Type serviceBase)
         {
             string source = GenerateSource(serviceBase);
-
-            Console.WriteLine("---------------------------------------");
-            Console.WriteLine(source);
-            Console.WriteLine("---------------------------------------");
 
             var result = CompileToType(source, serviceBase);
 
@@ -70,26 +62,38 @@ public class {Class} : {BaseClass}
 
         private static Type CompileToType(string source, Type serviceBase)
         {
-            var type = CSharpScript.EvaluateAsync<Type>(source,
-                ScriptOptions.Default
-                    .WithReferences(
-                        serviceBase.Assembly,
-                        typeof(IServiceProvider).Assembly,
-                        typeof(Task<>).Assembly,
-                        typeof(IQuery<,>).Assembly,
-                        typeof(ServerCallContext).Assembly
-                        )
-                    .WithImports(
-                        serviceBase.Namespace,
-                        typeof(IServiceProvider).Namespace,
-                        typeof(Task<>).Namespace,
-                        typeof(IQuery<,>).Namespace,
-                        typeof(ServerCallContext).Namespace
-                        )
-                )
-                .Result;
+            try
+            {
+                var type = CSharpScript.EvaluateAsync<Type>(source,
+                    ScriptOptions.Default
+                        .WithReferences(
+                            serviceBase.Assembly,
+                            typeof(IServiceProvider).Assembly,
+                            typeof(Task<>).Assembly,
+                            typeof(IQuery<,>).Assembly,
+                            typeof(ServerCallContext).Assembly
+                            )
+                        .WithImports(
+                            serviceBase.Namespace,
+                            typeof(IServiceProvider).Namespace,
+                            typeof(Task<>).Namespace,
+                            typeof(IQuery<,>).Namespace,
+                            typeof(ServerCallContext).Namespace
+                            )
+                    )
+                    .Result;
 
-            return type;
+                return type;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Compilation failed for source: "
+                    + Environment.NewLine
+                    + "---"
+                    + source
+                    + "---"
+                    , ex);
+            }
         }
 
         private string GenerateSource(Type serviceBase)

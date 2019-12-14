@@ -19,6 +19,7 @@ namespace Mip.Grpc.Example
         {
             services.AddGrpc();
 
+            services.AddScoped<IDispatcher, Dispatcher>();
             services.AddScoped<IQuery<HelloRequest, HelloReply>, SayHelloQuery>();
             services.AddScoped<IQuery<HowdyRequest, HowdyReply>, SayHowdyQuery>();
         }

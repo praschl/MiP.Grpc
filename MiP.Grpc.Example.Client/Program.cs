@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MiP.Grpc.Example.Client
 {
-    class Program
+    static class Program
     {
         static async Task Main(string[] args)
         {

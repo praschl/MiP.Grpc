@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Grpc.Core;
 using MiP.Grpc;
 
 namespace Mip.Grpc.Example
@@ -8,8 +9,10 @@ namespace Mip.Grpc.Example
     {
         private Guid _guid = Guid.NewGuid();
 
-        public Task<HelloReply> RunAsync(HelloRequest request)
+        public Task<HelloReply> RunAsync(HelloRequest request, ServerCallContext context)
         {
+            Console.WriteLine(context.Host);
+
             return Task.FromResult(new HelloReply
             {
                 Message = "NEW Hello " + request.Name + _guid
