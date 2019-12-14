@@ -1,6 +1,7 @@
 ﻿using Grpc.Core;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -9,19 +10,78 @@ namespace MiP.Grpc
 {
     public class DispatcherCompiler
     {
+        private class Tag
+        {
+            public const string Class = "{Class}";
+            public const string Members = "{Members}";
+
+            public const string Constructor = "{Constructor}";
+            public const string Method = "{Method}";
+            public const string Request = "{Request}";
+            public const string Reply = "{Reply}";
+        }
+
+        public const string ClassCode = @"
+public class " + Tag.Class + @" 
+{
+    " + Tag.Members + @"
+}
+";
+
+        public const string ConstructorCode = @"
+    private readonly IServiceProvider _serviceProvider;
+    public " + Tag.Constructor + @"(IServiceProvider serviceProvider) 
+    {
+        _serviceProvider = serviceProvider;
+    }
+";
+
+        public const string MethodCode = @"
+    public async Task<" + Tag.Reply + "> " + Tag.Method + "(" + Tag.Reply + @" reply)
+    {
+        await Task.CompletedTask;
+    }
+";
+
+        private const string Base = "Base";
+
         public Type CompileDispatcher(Type serviceBase)
         {
-            Console.WriteLine("------------");
             var definitions = GetMethodsToImplement(serviceBase);
+            string implName = serviceBase.Name;
+            if (implName.EndsWith(Base))
+                implName = implName.Substring(0, implName.Length - Base.Length);
+            implName += "Dispatcher";
 
-            foreach (var def in definitions)
-            {
-                Console.WriteLine($"{def.ReplyType.Name} {def.MethodName}({def.RequestType.Name})");
-            }
+            var source = GenerateSource(definitions, implName);
 
-            Console.WriteLine("------------");
+            Console.WriteLine("---------------------------------------");
+            Console.WriteLine(source);
+            Console.WriteLine("---------------------------------------");
 
             return null;
+        }
+
+        private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName)
+        {
+            string members =
+                ConstructorCode.Replace("{ConstructorName}", typeName)
+                +
+                string.Concat(definitions.Select(GenerateMethod));
+
+            string classSource = ClassCode
+                .Replace(Tag.Class, typeName)
+                .Replace(Tag.Members, members);
+
+            return classSource;
+        }
+
+        private string GenerateMethod(QueryDefinition definition)
+        {
+            return MethodCode
+                .Replace(Tag.Method, definition.MethodName)
+                .Replace(Tag.Request, definition.RequestType.Name)
+                .Replace(Tag.Reply, definition.ReplyType.Name);
         }
 
         private static IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)
@@ -69,4 +129,6 @@ namespace MiP.Grpc
         public Type RequestType { get; }
         public Type ReplyType { get; }
     }
+
+
 }
