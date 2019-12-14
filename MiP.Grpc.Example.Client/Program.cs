@@ -9,29 +9,40 @@ namespace MiP.Grpc.Example.Client
     {
         static async Task Main(string[] args)
         {
-            await Task.Delay(1000);
-
-            var channel = GrpcChannel.ForAddress("https://localhost:5001");
-            var client = new Greeter.GreeterClient(channel);
-
-            var result1 = await client.SayHelloAsync(new HelloRequest
+            try
             {
-                Name = "Michael"
-            });
+                await Task.Delay(1000);
 
-            Console.WriteLine(result1.Message);
+                var channel = GrpcChannel.ForAddress("https://localhost:5001");
+                var client = new Greeter.GreeterClient(channel);
 
-            await Task.Delay(1000);
+                var result1 = await client.SayHelloAsync(new HelloRequest
+                {
+                    Name = "Michael"
+                });
 
-            var result2 = await client.SayHowdyAsync(new HowdyRequest
+                Console.WriteLine(result1.Message);
+
+                await Task.Delay(1000);
+
+                var result2 = await client.SayHowdyAsync(new HowdyRequest
+                {
+                    Name = "Simon",
+                    Number = 1
+                });
+
+                Console.WriteLine(result1.Message + Environment.NewLine + result2.Number);
+            }
+            catch (Exception ex)
             {
-                Name = "Simon",
-                Number = 1
-            });
-
-            Console.WriteLine(result1.Message + Environment.NewLine + result2.Number);
-
-            await Task.Delay(5000);
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(ex);
+            }
+            finally
+            {
+                Console.WriteLine("Press Enter");
+                Console.ReadLine();
+            }
         }
     }
 }

@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using MiP.Grpc;
 
 namespace Mip.Grpc.Example
 {
@@ -31,6 +32,8 @@ namespace Mip.Grpc.Example
 
             app.UseEndpoints(endpoints =>
             {
+                Type impl = new DispatcherCompiler().CompileDispatcher(typeof(Mip.Grpc.Example.Greeter.GreeterBase));
+
                 endpoints.MapGrpcService<GreeterService>();
 
                 endpoints.MapGet("/", async context =>
