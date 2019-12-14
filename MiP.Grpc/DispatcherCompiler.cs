@@ -1,31 +1,32 @@
 ﻿using Grpc.Core;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Scripting;
+using Microsoft.CodeAnalysis.Scripting;
+using System.Diagnostics;
 
 namespace MiP.Grpc
 {
     public class DispatcherCompiler
     {
-        private class Tag
+        private static class Tag
         {
             public const string Class = "{Class}";
+            public const string BaseClass = "{BaseClass}";
             public const string Members = "{Members}";
 
             public const string Constructor = "{Constructor}";
             public const string Method = "{Method}";
             public const string Request = "{Request}";
-            public const string Reply = "{Reply}";
+            public const string Response = "{Response}";
         }
 
         public const string ClassCode = @"
-public class " + Tag.Class + @" 
-{
-    " + Tag.Members + @"
-}
+public class " + Tag.Class + " : " + Tag.BaseClass + @"
+{" + Tag.Members + @"}
 ";
 
         public const string ConstructorCode = @"
@@ -37,9 +38,11 @@ public class " + Tag.Class + @"
 ";
 
         public const string MethodCode = @"
-    public async Task<" + Tag.Reply + "> " + Tag.Method + "(" + Tag.Reply + @" reply)
+    public async Task<" + Tag.Response + "> " + Tag.Method + "(" + Tag.Request + @" response)
     {
-        await Task.CompletedTask;
+        var query = (IQuery<" + Tag.Request + "," + Tag.Response + ">) _serviceProvider.GetService(typeof(IQuery<" + Tag.Request + "," + Tag.Response + @">));
+
+        return await query.RunAsync(response);
     }
 ";
 
@@ -47,30 +50,66 @@ public class " + Tag.Class + @"
 
         public Type CompileDispatcher(Type serviceBase)
         {
-            var definitions = GetMethodsToImplement(serviceBase);
-            string implName = serviceBase.Name;
-            if (implName.EndsWith(Base))
-                implName = implName.Substring(0, implName.Length - Base.Length);
-            implName += "Dispatcher";
-
-            var source = GenerateSource(definitions, implName);
+            string source = GenerateSource(serviceBase);
 
             Console.WriteLine("---------------------------------------");
             Console.WriteLine(source);
             Console.WriteLine("---------------------------------------");
 
-            return null;
+            var result = CompileToType(source, serviceBase);
+
+            return result;
         }
 
-        private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName)
+        private static Type CompileToType(string source, Type serviceBase)
         {
-            string members =
-                ConstructorCode.Replace("{ConstructorName}", typeName)
+            var type = CSharpScript.EvaluateAsync<Type>(source,
+                ScriptOptions.Default
+                    .WithReferences(
+                        serviceBase.Assembly,
+                        typeof(IServiceProvider).Assembly,
+                        typeof(Task<>).Assembly,
+                        typeof(IQuery<,>).Assembly
+                        )
+                    .WithImports(
+                        serviceBase.Namespace,
+                        typeof(IServiceProvider).Namespace,
+                        typeof(Task<>).Namespace,
+                        typeof(IQuery<,>).Namespace
+                        )
+                )
+                .Result;
+
+            return type;
+        }
+
+        private string GenerateSource(Type serviceBase)
+        {
+            var definitions = GetMethodsToImplement(serviceBase);
+            var implName = serviceBase.Name;
+            if (implName.EndsWith(Base))
+                implName = implName.Substring(0, implName.Length - Base.Length);
+            implName += "Dispatcher";
+
+            var baseName = serviceBase.FullName.Replace("+", ".");
+
+            var source = GenerateSource(definitions, implName, baseName);
+
+            source += Environment.NewLine + Environment.NewLine
+                + "return typeof(" + implName + ");";
+            return source;
+        }
+
+        private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName, string baseClass)
+        {
+            var members =
+                ConstructorCode.Replace(Tag.Constructor, typeName)
                 +
                 string.Concat(definitions.Select(GenerateMethod));
 
-            string classSource = ClassCode
+            var classSource = ClassCode
                 .Replace(Tag.Class, typeName)
+                .Replace(Tag.BaseClass, baseClass)
                 .Replace(Tag.Members, members);
 
             return classSource;
@@ -81,7 +120,7 @@ public class " + Tag.Class + @"
             return MethodCode
                 .Replace(Tag.Method, definition.MethodName)
                 .Replace(Tag.Request, definition.RequestType.Name)
-                .Replace(Tag.Reply, definition.ReplyType.Name);
+                .Replace(Tag.Response, definition.ResponseType.Name);
         }
 
         private static IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)
@@ -116,19 +155,8 @@ public class " + Tag.Class + @"
         }
     }
 
-    public class QueryDefinition
+    public interface IQuery<TRequest, TResponse>
     {
-        public QueryDefinition(string methodName, Type requestType, Type replyType)
-        {
-            MethodName = methodName;
-            RequestType = requestType;
-            ReplyType = replyType;
-        }
-
-        public string MethodName { get; }
-        public Type RequestType { get; }
-        public Type ReplyType { get; }
+        Task<TResponse> RunAsync(TRequest request);
     }
-
-
 }
