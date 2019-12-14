@@ -18,6 +18,9 @@ namespace Mip.Grpc.Example
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddGrpc();
+
+            services.AddScoped<IQuery<HelloRequest, HelloReply>, SayHelloQuery>();
+            services.AddScoped<IQuery<HowdyRequest, HowdyReply>, SayHowdyQuery>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -32,9 +35,10 @@ namespace Mip.Grpc.Example
 
             app.UseEndpoints(endpoints =>
             {
-                Type impl = new DispatcherCompiler().CompileDispatcher(typeof(Mip.Grpc.Example.Greeter.GreeterBase));
+                //var impl = new DispatcherCompiler().CompileDispatcher(typeof(Mip.Grpc.Example.Greeter.GreeterBase));
+                //endpoints.MapGrpcService<GreeterService>();
 
-                endpoints.MapGrpcService<GreeterService>();
+                endpoints.CompileAndMapGrpcServiceDispatcher(typeof(Greeter.GreeterBase));
 
                 endpoints.MapGet("/", async context =>
                 {

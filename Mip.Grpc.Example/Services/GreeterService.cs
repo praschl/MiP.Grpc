@@ -15,7 +15,7 @@ namespace Mip.Grpc.Example
         {
             return Task.FromResult(new HelloReply
             {
-                Message = "Hello " + request.Name
+                Message = "OLD Hello " + request.Name
             });
         }
 
@@ -23,7 +23,7 @@ namespace Mip.Grpc.Example
         {
             return Task.FromResult(new HowdyReply
             {
-                Message = "Howdy" + request.Name,
+                Message = "OLD Howdy" + request.Name,
                 Number = request.Number + 1
             });
         }

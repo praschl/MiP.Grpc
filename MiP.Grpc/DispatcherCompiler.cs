@@ -6,7 +6,6 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using System.Diagnostics;
 
 namespace MiP.Grpc
 {
@@ -25,22 +24,30 @@ namespace MiP.Grpc
         }
 
         public const string ClassCode = @"
-public class " + Tag.Class + " : " + Tag.BaseClass + @"
-{" + Tag.Members + @"}
+public class {Class} : {BaseClass}
+{{Members}}
 ";
 
         public const string ConstructorCode = @"
     private readonly IServiceProvider _serviceProvider;
-    public " + Tag.Constructor + @"(IServiceProvider serviceProvider) 
+    public {Constructor}(IServiceProvider serviceProvider) 
     {
+        if (serviceProvider == null)
+            throw new ArgumentNullException(nameof(serviceProvider));
+
         _serviceProvider = serviceProvider;
     }
 ";
 
         public const string MethodCode = @"
-    public async Task<" + Tag.Response + "> " + Tag.Method + "(" + Tag.Request + @" response)
+    public async override Task<{Response}> {Method}({Request} response, ServerCallContext context)
     {
-        var query = (IQuery<" + Tag.Request + "," + Tag.Response + ">) _serviceProvider.GetService(typeof(IQuery<" + Tag.Request + "," + Tag.Response + @">));
+        System.Console.WriteLine(""  ################  Task<{Response}> {Method}({Request} response) "");
+
+        var query = (IQuery<{Request}, {Response}>) _serviceProvider.GetService(typeof(IQuery<{Request}, {Response}>));
+
+        if (query == null)
+            throw new InvalidOperationException("" ##########  Query was not found"");
 
         return await query.RunAsync(response);
     }
@@ -69,13 +76,15 @@ public class " + Tag.Class + " : " + Tag.BaseClass + @"
                         serviceBase.Assembly,
                         typeof(IServiceProvider).Assembly,
                         typeof(Task<>).Assembly,
-                        typeof(IQuery<,>).Assembly
+                        typeof(IQuery<,>).Assembly,
+                        typeof(ServerCallContext).Assembly
                         )
                     .WithImports(
                         serviceBase.Namespace,
                         typeof(IServiceProvider).Namespace,
                         typeof(Task<>).Namespace,
-                        typeof(IQuery<,>).Namespace
+                        typeof(IQuery<,>).Namespace,
+                        typeof(ServerCallContext).Namespace
                         )
                 )
                 .Result;
@@ -154,9 +163,5 @@ public class " + Tag.Class + " : " + Tag.BaseClass + @"
             }
         }
     }
-
-    public interface IQuery<TRequest, TResponse>
-    {
-        Task<TResponse> RunAsync(TRequest request);
-    }
 }
+
