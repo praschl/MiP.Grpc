@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+option csharp_namespace = "Mip.Grpc.Example";
+
+package greet;
+
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloReply);
+
+  rpc SayHowdy (HowdyRequest) returns (HowdyReply);
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloReply {
+  string message = 1;
+}
+
+message HowdyRequest {
+    string name = 1;
+    int32 number = 2;
+}
+
+message HowdyReply {
+    string message = 1;
+    int32 number = 2;
+}
