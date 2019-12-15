@@ -11,6 +11,8 @@
     <RepositoryUrl>https://github.com/praschl/MiP.Grpc</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
     <PackageTags>C# grpc</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup>

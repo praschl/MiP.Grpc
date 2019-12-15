@@ -6,6 +6,12 @@ namespace Microsoft.AspNetCore.Builder
 {
     public static class GrpcDispatcherCompilerEndpointRouteBuilderExtensions
     {
+        /// <summary>
+        /// Creates an implementation of <paramref name="serviceBaseType"/> and maps the implementation so it can be called.
+        /// </summary>
+        /// <param name="builder">The <see cref="IEndpointRouteBuilder"/> used to map the implementation of the service.</param>
+        /// <param name="serviceBaseType">The base type of the service, Greeter.GreeterBase would be an example for the Greeter service that comes with the template.</param>
+        /// <returns><see cref="GrpcServiceEndpointConventionBuilder"/> that can be used to customize the mapping.</returns>
         public static GrpcServiceEndpointConventionBuilder CompileAndMapGrpcServiceDispatcher(this IEndpointRouteBuilder builder, Type serviceBaseType)
         {
             DispatcherCompiler compiler = new DispatcherCompiler();
