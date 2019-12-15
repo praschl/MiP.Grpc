@@ -26,7 +26,7 @@ So, each service method gets its own class where it's implemented.
 Lets start our example with the greeter service that is generated when you create the project.
 
 ### Basics
-Add the dependency to the nuget package (TBD)
+Add the dependency to the nuget package
 ```
 Install-Package MiP.Grpc
 ```
