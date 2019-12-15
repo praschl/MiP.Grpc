@@ -101,11 +101,11 @@ return typeof({Class});
 
             var implName = GetClassName(serviceBase);
 
-            var baseName = serviceBase.FullName.Replace("+", "."); // + is used by framework for nested classes
+            var baseName = serviceBase.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
 
             var source = GenerateSource(definitions, implName, baseName);
 
-            source += ReturnTypeCode.Replace(Tag.Class, implName);
+            source += ReturnTypeCode.Replace(Tag.Class, implName, StringComparison.Ordinal);
 
             return source;
         }
@@ -114,7 +114,7 @@ return typeof({Class});
         {
             var implName = serviceBase.Name;
 
-            if (implName.EndsWith(Base)) // which it does from the protobuf code generation
+            if (implName.EndsWith(Base, StringComparison.Ordinal)) // which it does from the protobuf code generation
                 implName = implName.Substring(0, implName.Length - Base.Length);
 
             implName += Dispatcher;
@@ -125,14 +125,14 @@ return typeof({Class});
         private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName, string baseClass)
         {
             var members =
-                ConstructorCode.Replace(Tag.Constructor, typeName)
+                ConstructorCode.Replace(Tag.Constructor, typeName, StringComparison.Ordinal)
                 +
                 string.Concat(definitions.Select(GenerateMethod));
 
             var classSource = ClassCode
-                .Replace(Tag.Class, typeName)
-                .Replace(Tag.BaseClass, baseClass)
-                .Replace(Tag.Members, members);
+                .Replace(Tag.Class, typeName, StringComparison.Ordinal)
+                .Replace(Tag.BaseClass, baseClass, StringComparison.Ordinal)
+                .Replace(Tag.Members, members, StringComparison.Ordinal);
 
             return classSource;
         }
@@ -140,9 +140,9 @@ return typeof({Class});
         private string GenerateMethod(QueryDefinition definition)
         {
             return MethodCode
-                .Replace(Tag.Method, definition.MethodName)
-                .Replace(Tag.Request, definition.RequestType.Name)
-                .Replace(Tag.Response, definition.ResponseType.Name);
+                .Replace(Tag.Method, definition.MethodName, StringComparison.Ordinal)
+                .Replace(Tag.Request, definition.RequestType.Name, StringComparison.Ordinal)
+                .Replace(Tag.Response, definition.ResponseType.Name, StringComparison.Ordinal);
         }
 
         private static IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)

@@ -18,7 +18,7 @@ namespace MiP.Grpc
         {
             var query = _serviceProvider.GetRequiredService<IHandler<TRequest, TResponse>>();
 
-            return await query.RunAsync(request, context);
+            return await query.RunAsync(request, context).ConfigureAwait(false);
         }
     }
 }
