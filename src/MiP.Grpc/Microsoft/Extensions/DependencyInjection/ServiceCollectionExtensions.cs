@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.DependencyInjection
     {
         public static IServiceCollection AddDispatchedGrpcHandlers(this IServiceCollection services, Assembly[] fromAssemblies = null)
         {
-            services.AddScoped<IDispatcher, Dispatcher>();
+            services.AddTransient<IDispatcher, Dispatcher>();
 
             if (fromAssemblies != null)
             {
