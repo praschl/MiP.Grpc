@@ -5,7 +5,7 @@ using MiP.Grpc;
 
 namespace Mip.Grpc.Example
 {
-    public class SayHowdyQuery : IQuery<HowdyRequest, HowdyReply>
+    public class SayHowdyHandler : IHandler<HowdyRequest, HowdyReply>
     {
         private Guid _guid = Guid.NewGuid();
 

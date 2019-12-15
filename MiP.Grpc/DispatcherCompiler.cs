@@ -9,7 +9,7 @@ using Microsoft.CodeAnalysis.Scripting;
 
 namespace MiP.Grpc
 {
-    public class DispatcherCompiler
+    internal class DispatcherCompiler
     {
         private static class Tag
         {
@@ -24,6 +24,8 @@ namespace MiP.Grpc
         }
 
         private const string Base = "Base";
+        private const string Dispatcher = "Dispatcher";
+
         public const string ClassCode = @"
 public class {Class} : {BaseClass}
 {{Members}}
@@ -31,9 +33,9 @@ public class {Class} : {BaseClass}
 
         public const string ConstructorCode = @"
     private readonly IDispatcher _dispatcher;
-    public {Constructor}(IDispatcher dispatcher, IServiceProvider serviceProvider)
+    public {Constructor}(IDispatcher dispatcher)
     {
-        _dispatcher = dispatcher ?? new Dispatcher(serviceProvider);
+        _dispatcher = dispatcher;
     }
 ";
 
@@ -41,14 +43,11 @@ public class {Class} : {BaseClass}
     public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
         return await _dispatcher.Dispatch<{Request}, {Response}>(request, context);
-
-        //var query = (IQuery<{Request}, {Response}>) _serviceProvider.GetService(typeof(IQuery<{Request}, {Response}>));
-
-        //if (query == null)
-        //    throw new InvalidOperationException(""IQuery<{Request}, {Response}> could not be resolved."");
-
-        //return await query.RunAsync(request, context);
     }
+";
+
+        public const string ReturnTypeCode = @"
+return typeof({Class});
 ";
 
         public Type CompileDispatcher(Type serviceBase)
@@ -70,18 +69,18 @@ public class {Class} : {BaseClass}
                             serviceBase.Assembly,
                             typeof(IServiceProvider).Assembly,
                             typeof(Task<>).Assembly,
-                            typeof(IQuery<,>).Assembly,
+                            typeof(IHandler<,>).Assembly,
                             typeof(ServerCallContext).Assembly
                             )
                         .WithImports(
                             serviceBase.Namespace,
                             typeof(IServiceProvider).Namespace,
                             typeof(Task<>).Namespace,
-                            typeof(IQuery<,>).Namespace,
+                            typeof(IHandler<,>).Namespace,
                             typeof(ServerCallContext).Namespace
                             )
                     )
-                    .Result;
+                    .GetAwaiter().GetResult();
 
                 return type;
             }
@@ -99,18 +98,28 @@ public class {Class} : {BaseClass}
         private string GenerateSource(Type serviceBase)
         {
             var definitions = GetMethodsToImplement(serviceBase);
-            var implName = serviceBase.Name;
-            if (implName.EndsWith(Base))
-                implName = implName.Substring(0, implName.Length - Base.Length);
-            implName += "Dispatcher";
 
-            var baseName = serviceBase.FullName.Replace("+", ".");
+            var implName = GetClassName(serviceBase);
+
+            var baseName = serviceBase.FullName.Replace("+", "."); // + is used by framework for nested classes
 
             var source = GenerateSource(definitions, implName, baseName);
 
-            source += Environment.NewLine + Environment.NewLine
-                + "return typeof(" + implName + ");";
+            source += ReturnTypeCode.Replace(Tag.Class, implName);
+
             return source;
+        }
+
+        private static string GetClassName(Type serviceBase)
+        {
+            var implName = serviceBase.Name;
+
+            if (implName.EndsWith(Base)) // which it does from the protobuf code generation
+                implName = implName.Substring(0, implName.Length - Base.Length);
+
+            implName += Dispatcher;
+
+            return implName;
         }
 
         private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName, string baseClass)

@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace MiP.Grpc
 {
-    public class Dispatcher : IDispatcher
+    internal class Dispatcher : IDispatcher
     {
         private readonly IServiceProvider _serviceProvider;
 
@@ -16,7 +16,7 @@ namespace MiP.Grpc
 
         public async Task<TResponse> Dispatch<TRequest, TResponse>(TRequest request, ServerCallContext context)
         {
-            var query = _serviceProvider.GetRequiredService<IQuery<TRequest, TResponse>>();
+            var query = _serviceProvider.GetRequiredService<IHandler<TRequest, TResponse>>();
 
             return await query.RunAsync(request, context);
         }
