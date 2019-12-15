@@ -8,11 +8,8 @@ namespace MiP.Gprc.Test
         [TestMethod]
         public void TestMethod1()
         {
-        }
-
-        [TestMethod]
-        public void TestMethod2()
-        {
+            // TODO
+            // sorry, my test explorer isn't working atm :-(
         }
     }
 }
