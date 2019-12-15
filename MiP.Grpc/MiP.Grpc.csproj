@@ -2,6 +2,15 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+    <Version>0.1.0</Version>
+    <Authors>Michael Praschl</Authors>
+    <Company />
+    <Description>A library providing extensions for gRPC
+- Autoimplement the service and dispatch each method to a handler, preventing a huge service class when there are a lot of service methods.</Description>
+    <PackageProjectUrl>https://github.com/praschl/MiP.Grpc</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/praschl/MiP.Grpc</RepositoryUrl>
+    <RepositoryType>Github</RepositoryType>
+    <PackageTags>C# gRPC</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
