@@ -27,22 +27,22 @@ Lets start our example with the greeter service that is generated when you creat
 
 ### Basics
 Add the dependency to the nuget package
-```
+```powershell
 Install-Package MiP.Grpc
 ```
 Navigate to the Startup class and add
-```
+```csharp
 services.AddDispatchedGrpcHandlers();
 ```
 right under `services.AddGrpc();` in the `ConfigureServices()` method.
 This will add required dependencies and (optionally) register handlers - we will come to that later.
 
 Next, go to the `Configure()` method and replace
-```
+```csharp
 endpoints.MapGrpcService<GreeterService>();
 ```
 with
-```
+```csharp
 endpoints.CompileAndMapGrpcServiceDispatcher(typeof(Greeter.GreeterBase));
 ```
 or whatever base class you would normally derive your service of. This will create an implementation for the service and map it.
@@ -51,7 +51,7 @@ or whatever base class you would normally derive your service of. This will crea
 Let's continue with the Greeter service example, since it also comes with the template.
 
 You can now implement a handler for the SayHello() method
-```
+```csharp
 public class SayHelloHandler : IHandler<HelloRequest, HelloReply>
 {
     public Task<HelloReply> RunAsync(HelloRequest request, ServerCallContext context)
@@ -64,11 +64,11 @@ public class SayHelloHandler : IHandler<HelloRequest, HelloReply>
 }
 ```
 The handler needs to be registered in the `ConfigureServices()` method, which can be done in two ways, you can either do it explicitly, by calling
-```
+```csharp
 services.AddTransient<IHandler<HelloRequest, HelloReply>>();
 ```
 or by passing the assembly where all your handlers are implemented to the `AddDispatchedGrpcHandlers()` call
-```
+```csharp
 services.AddDispatchedGrpcHandlers(new[] { Assembly.GetExecutingAssembly() });
 ```
 In this example, the handlers would have to be in the same assembly as the grpc service host. The method will scan for types implementing `IHandler<TRequest, TResponse>` and register them with a transient lifetime.
@@ -82,11 +82,11 @@ This also means there is futile to implement two handlers for the same `TRequest
 
 ## Extension
 Each method of the implemented service does one very simple thing, it calls 
-```
+```csharp
 dispatcher.Dispatch<TRequest, TResponse>(request, context);
 ```
 and returns the result. The dispatcher is an implementation of the IDispatcher interface:
-```
+```csharp
 public interface IDispatcher
 {
     Task<TResponse> Dispatch<TRequest, TResponse>(TRequest request, ServerCallContext context);
@@ -95,7 +95,7 @@ public interface IDispatcher
 The default dispatcher is registered with transient lifetime scope when calling `AddDispatchedGrpcHandlers()` and it does nothing more than resolve `IHandler<TRequest, TResult` call it, and return the result.
 
 You can always overwrite the default dispatcher by creating your own implementation (to do logging or whatever you want) and register it, just make sure, you overwrite the default dispatcher by calling
-```
+```csharp
 services.AddTransient<IDispatcher, MyAwsomeDispatcher>();
 ```
 after the call to `AddDispatchedGrpcHandlers()`.
