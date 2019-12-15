@@ -50,7 +50,7 @@ or whatever base class you would normally derive your service of. This will crea
 ### Create Handlers
 Let's continue with the Greeter service example, since it also comes with the template.
 
-You can not implement a handler for the SayHello() method
+You can now implement a handler for the SayHello() method
 ```
 public class SayHelloHandler : IHandler<HelloRequest, HelloReply>
 {
