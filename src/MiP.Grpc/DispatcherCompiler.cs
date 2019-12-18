@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
+using Proto = Google.Protobuf.WellKnownTypes;
 
 namespace MiP.Grpc
 {
@@ -50,34 +51,36 @@ public class {Class} : {BaseClass}
 return typeof({Class});
 ";
 
-        public Type CompileDispatcher(Type serviceBase)
+        public Type CompileDispatcher(Type serviceBaseType)
         {
-            string source = GenerateSource(serviceBase);
+            string source = GenerateSource(serviceBaseType);
 
-            var result = CompileToType(source, serviceBase);
+            var result = CompileToType(source, serviceBaseType);
 
             return result;
         }
 
-        private static Type CompileToType(string source, Type serviceBase)
+        private static Type CompileToType(string source, Type serviceBaseType)
         {
             try
             {
+                var types = new[] 
+                {
+                    serviceBaseType,
+                    typeof(IServiceProvider),
+                    typeof(Task<>),
+                    typeof(IHandler<,>),
+                    typeof(ServerCallContext),
+                    typeof(Proto.Empty)
+                };
+
                 var type = CSharpScript.EvaluateAsync<Type>(source,
                     ScriptOptions.Default
                         .WithReferences(
-                            serviceBase.Assembly,
-                            typeof(IServiceProvider).Assembly,
-                            typeof(Task<>).Assembly,
-                            typeof(IHandler<,>).Assembly,
-                            typeof(ServerCallContext).Assembly
+                            types.Select(t => t.Assembly)
                             )
                         .WithImports(
-                            serviceBase.Namespace,
-                            typeof(IServiceProvider).Namespace,
-                            typeof(Task<>).Namespace,
-                            typeof(IHandler<,>).Namespace,
-                            typeof(ServerCallContext).Namespace
+                            types.Select(t => t.Namespace)
                             )
                     )
                     .GetAwaiter().GetResult();

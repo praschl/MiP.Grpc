@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/Empty.proto";
+
 option csharp_namespace = "Mip.Grpc.Example";
 
 package greet;
@@ -8,6 +10,10 @@ service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
 
   rpc SayHowdy (HowdyRequest) returns (HowdyReply);
+
+  // two methods with Empty / Empty should be supported
+  rpc SayNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
+  // rpc AskNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message HelloRequest {
