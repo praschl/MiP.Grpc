@@ -71,7 +71,7 @@ namespace MiP.Grpc
             Add(handlerInfo, name);
         }
 
-        internal HandlerInfo GetIHandlers(Type type)
+        internal static HandlerInfo GetIHandlers(Type type)
         {
             var interfaces = type.GetInterfaces();
 

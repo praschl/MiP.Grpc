@@ -15,6 +15,9 @@ namespace Microsoft.AspNetCore.Builder
         /// <returns><see cref="GrpcServiceEndpointConventionBuilder"/> that can be used to customize the mapping.</returns>
         public static GrpcServiceEndpointConventionBuilder CompileAndMapGrpcServiceDispatcher(this IEndpointRouteBuilder builder, IServiceProvider serviceProvider, Type serviceBaseType)
         {
+            if (serviceBaseType == null)
+                throw new ArgumentNullException(nameof(serviceBaseType));
+
             var dispatcherMap = serviceProvider.GetService<IDispatcherMapBuilder>();
 
             DispatcherCompiler compiler = new DispatcherCompiler(dispatcherMap);

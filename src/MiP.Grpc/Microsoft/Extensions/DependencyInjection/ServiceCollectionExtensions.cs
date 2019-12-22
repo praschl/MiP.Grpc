@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
         private static void AddHandlersFromAssembly(Assembly assembly, DispatcherMapBuilder mapBuilder)
         {
-            var handlerInfos = GetTypeInfos(assembly.GetTypes(), mapBuilder);
+            var handlerInfos = GetTypeInfos(assembly.GetTypes());
 
             foreach (var handlerInfo in handlerInfos)
             {
@@ -61,9 +61,9 @@ namespace Microsoft.Extensions.DependencyInjection
             }
         }
 
-        private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types, DispatcherMapBuilder mapBuilder)
+        private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types)
         {
-            var handlerInfos = types.Select(mapBuilder.GetIHandlers)
+            var handlerInfos = types.Select(DispatcherMapBuilder.GetIHandlers)
                 .Where(hi => hi.ServiceTypes.Count > 0);
 
             return handlerInfos;

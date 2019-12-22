@@ -63,11 +63,18 @@ return typeof({Class});
 
         public Type CompileDispatcher(Type serviceBaseType)
         {
-            var (source, types) = GenerateSource(serviceBaseType);
+            try
+            {
+                var (source, types) = GenerateSource(serviceBaseType);
 
-            var result = CompileToType(source, types);
+                var dispatcherType = CompileToType(source, types);
 
-            return result;
+                return dispatcherType;
+            }
+            catch(Exception ex)
+            {
+                throw new InvalidOperationException($"Generating implementation for service {serviceBaseType.FullName} failed", ex);
+            }
         }
 
         private static Type CompileToType(string source, IEnumerable<Type> importTypes)
@@ -83,7 +90,7 @@ return typeof({Class});
                     typeof(Proto.Empty)
                 }.Concat(importTypes);
 
-                var type = CSharpScript.EvaluateAsync<Type>(source,
+                var compiledType = CSharpScript.EvaluateAsync<Type>(source,
                     ScriptOptions.Default
                         .WithReferences(
                             types.Select(t => t.Assembly).Distinct()
@@ -94,7 +101,7 @@ return typeof({Class});
                     )
                     .GetAwaiter().GetResult();
 
-                return type;
+                return compiledType;
             }
             catch (Exception ex)
             {
@@ -107,64 +114,70 @@ return typeof({Class});
             }
         }
 
-        private (string source, IReadOnlyCollection<Type> usedTypes) GenerateSource(Type serviceBase)
+        private (string source, IReadOnlyCollection<Type> usedTypes) GenerateSource(Type serviceBaseType)
         {
-            var definitions = GetMethodsToImplement(serviceBase);
+            var methodHandlerDefinitions = GetMethodsToImplement(serviceBaseType);
 
-            var implName = GetClassName(serviceBase);
+            var className = GetClassName(serviceBaseType);
 
-            var baseName = serviceBase.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
+            var baseClassName = serviceBaseType.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
 
-            var source = GenerateSource(definitions, implName, baseName);
+            var source = GenerateSource(methodHandlerDefinitions, className, baseClassName);
 
-            source += ReturnTypeCode.Replace(Tag.Class, implName, StringComparison.Ordinal);
+            source += ReturnTypeCode.Replace(Tag.Class, className, StringComparison.Ordinal);
 
-            var usedTypes = definitions.SelectMany(x => new[] { x.ConcreteHandlerType, x.RequestType, x.ResponseType })
-                .Concat(new[] { serviceBase })
+            var usedTypes = methodHandlerDefinitions.SelectMany(x => new[] { x.HandlerType, x.RequestType, x.ResponseType })
+                .Concat(new[] { serviceBaseType })
                 .ToArray();
 
             return (source, usedTypes);
         }
 
-        private static string GetClassName(Type serviceBase)
+        private static string GetClassName(Type serviceBaseType)
         {
-            var implName = serviceBase.Name;
+            var className = serviceBaseType.Name;
 
-            if (implName.EndsWith(Base, StringComparison.Ordinal)) // which it does from the protobuf code generation
-                implName = implName.Substring(0, implName.Length - Base.Length);
+            if (className.EndsWith(Base, StringComparison.Ordinal)) // which it does from the protobuf code generation
+                className = className.Substring(0, className.Length - Base.Length);
 
-            implName += Dispatcher;
+            className += Dispatcher;
 
-            return implName;
+            return className;
         }
 
-        private string GenerateSource(IEnumerable<QueryDefinition> definitions, string typeName, string baseClass)
+        private string GenerateSource(IEnumerable<MethodHandlerDefinition> definitions, string className, string baseClassName)
         {
             var members =
-                ConstructorCode.Replace(Tag.Constructor, typeName, StringComparison.Ordinal)
+                ConstructorCode.Replace(Tag.Constructor, className, StringComparison.Ordinal)
                 +
                 string.Concat(definitions.Select(GenerateMethod));
 
             var classSource = ClassCode
-                .Replace(Tag.Class, typeName, StringComparison.Ordinal)
-                .Replace(Tag.BaseClass, baseClass, StringComparison.Ordinal)
+                .Replace(Tag.Class, className, StringComparison.Ordinal)
+                .Replace(Tag.BaseClass, baseClassName, StringComparison.Ordinal)
                 .Replace(Tag.Members, members, StringComparison.Ordinal);
 
             return classSource;
         }
 
-        private string GenerateMethod(QueryDefinition definition)
+        private string GenerateMethod(MethodHandlerDefinition definition)
         {
             return MethodCode
                 .Replace(Tag.Method, definition.MethodName, StringComparison.Ordinal)
                 .Replace(Tag.Request, definition.RequestType.Name, StringComparison.Ordinal)
                 .Replace(Tag.Response, definition.ResponseType.Name, StringComparison.Ordinal)
-                .Replace(Tag.Handler, definition.ConcreteHandlerType.Name, StringComparison.Ordinal);
+                .Replace(Tag.Handler, definition.HandlerType.Name, StringComparison.Ordinal);
         }
 
-        private IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)
+        private IEnumerable<MethodHandlerDefinition> GetMethodsToImplement(Type serviceBase)
         {
             var methods = serviceBase.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
+
+            // methods that can be implemented have
+            // - return type of Task<T>
+            // - 2 arguments where the 
+            //   - first is the actual argument
+            //   - second is of type ServerCallContext
 
             foreach (var method in methods)
             {
@@ -194,7 +207,7 @@ return typeof({Class});
                 if (handlerType == null)
                     throw new InvalidOperationException($"No implementation found for IHandler<{parameterType.Name}, {returnType.Name}>");
 
-                var result = new QueryDefinition(methodName, parameterType, returnType, handlerType);
+                var result = new MethodHandlerDefinition(methodName, parameterType, returnType, handlerType);
                 yield return result;
             }
         }
