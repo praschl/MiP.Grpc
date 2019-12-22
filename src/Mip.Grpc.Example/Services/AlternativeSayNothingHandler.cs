@@ -6,6 +6,7 @@ using MiP.Grpc;
 
 namespace Mip.Grpc.Example
 {
+    [Handles(nameof(Greeter.GreeterBase.SayNothing))]
     public class AlternativeSayNothingHandler : IHandler<Empty, Empty>
     {
         public Task<Empty> RunAsync(Empty request, ServerCallContext context)

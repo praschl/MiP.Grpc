@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace MiP.Grpc
 {
@@ -16,7 +17,9 @@ namespace MiP.Grpc
 
         public string GetPreferredName()
         {
-            // TODO: check attributes
+            var attribute = (HandlesAttribute)Implementation.GetCustomAttributes(false).FirstOrDefault(a => a.GetType() == typeof(HandlesAttribute));
+            if (attribute != null)
+                return attribute.MethodName;
 
             // check class name
             string name = Implementation.Name;
