@@ -55,6 +55,9 @@ namespace MiP.Grpc.Example.Client
                 Console.WriteLine("nothing said");
                 await Task.Delay(200);
 
+                await client.SayRandomAsync(new Empty());
+                Console.WriteLine("something random said");
+                await Task.Delay(200);
             }
             catch (Exception ex)
             {

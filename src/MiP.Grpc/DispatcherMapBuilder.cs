@@ -34,7 +34,7 @@ namespace MiP.Grpc
 
             var map = _dispatcherMaps.FirstOrDefault(m =>
                 m.MethodName == methodName
-                && 
+                &&
                 m.ServiceType == requestedServiceType);
 
             return map?.HandlerType;
@@ -82,5 +82,5 @@ namespace MiP.Grpc
 
             return new HandlerInfo(type, services.ToArray());
         }
-   }
+    }
 }

@@ -8,12 +8,12 @@ package greet;
 
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
-
   rpc SayHowdy (HowdyRequest) returns (HowdyReply);
 
   // two methods with Empty / Empty should be supported
   rpc SayNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc AskNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc SayRandom (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message HelloRequest {

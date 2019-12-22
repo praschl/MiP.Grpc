@@ -6,11 +6,12 @@ using MiP.Grpc;
 
 namespace Mip.Grpc.Example
 {
-    public class AlternativeSayNothingHandler : IHandler<Empty, Empty>
+    [Handles(nameof(Greeter.GreeterBase.SayRandom))]
+    public class SaySomethingRandomHandler : IHandler<Empty, Empty>
     {
         public Task<Empty> RunAsync(Empty request, ServerCallContext context)
         {
-            Console.WriteLine("ALTERNATIVE SAY NOTHING called: " + context.Host);
+            Console.WriteLine("SAY RANDOM called: " + context.Host);
 
             return Task.FromResult(new Empty());
         }

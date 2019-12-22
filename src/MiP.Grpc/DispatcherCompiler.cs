@@ -205,7 +205,7 @@ return typeof({Class});
 
                 var handlerType = _dispatcherMap.FindHandler(methodName, parameterType, returnType);
                 if (handlerType == null)
-                    throw new InvalidOperationException($"No implementation found for IHandler<{parameterType.Name}, {returnType.Name}>");
+                    throw new InvalidOperationException($"Couldn't find a type that implements IHandler<{parameterType.Name}, {returnType.Name}> to handle method {returnType.Name} {methodName}({parameterType.Name}, ServerCallContext)");
 
                 var result = new MethodHandlerDefinition(methodName, parameterType, returnType, handlerType);
                 yield return result;
