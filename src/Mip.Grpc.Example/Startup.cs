@@ -14,7 +14,12 @@ namespace Mip.Grpc.Example
 
             // add handlers implementing IHandler<TRequest, TResponse>
             // these are the implementations the grpc requests will be forwarded to.
-            services.AddDispatchedGrpcHandlers(new[] { typeof(Startup).Assembly });
+            services.AddDispatchedGrpcHandlers(new[] { typeof(Startup).Assembly },
+                builder => 
+                {
+                    // override the default SayNothingHandler
+                    builder.Add<AlternativeSayNothingHandler>(nameof(Greeter.GreeterBase.SayNothing));
+                });
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -33,7 +38,7 @@ namespace Mip.Grpc.Example
                 //   endpoints.MapGrpcService<GreeterService>();
 
                 // but instead, you write
-                endpoints.CompileAndMapGrpcServiceDispatcher(typeof(Greeter.GreeterBase));
+                endpoints.CompileAndMapGrpcServiceDispatcher(app.ApplicationServices, typeof(Greeter.GreeterBase));
                 // this will compile a class deriving from Greeter.GreeterBase
                 // overriding its methods so that they get forwarded to implementations of IHandler<TRequest, TResponse>
 

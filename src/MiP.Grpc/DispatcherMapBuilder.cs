@@ -28,6 +28,18 @@ namespace MiP.Grpc
             return this;
         }
 
+        public Type FindHandler(string methodName, Type parameterType, Type returnType)
+        {
+            var requestedServiceType = typeof(IHandler<,>).MakeGenericType(parameterType, returnType);
+
+            var map = _dispatcherMaps.FirstOrDefault(m =>
+                m.MethodName == methodName
+                && 
+                m.ServiceType == requestedServiceType);
+
+            return map?.HandlerType;
+        }
+
         internal void Add(HandlerInfo handlerInfo, string name)
         {
             name ??= handlerInfo.GetPreferredName();
@@ -70,5 +82,5 @@ namespace MiP.Grpc
 
             return new HandlerInfo(type, services.ToArray());
         }
-    }
+   }
 }

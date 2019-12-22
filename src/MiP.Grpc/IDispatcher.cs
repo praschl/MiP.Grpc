@@ -5,7 +5,8 @@ namespace MiP.Grpc
 {
     public interface IDispatcher
     {
-        Task<TResponse> Dispatch<TRequest, TResponse>(TRequest request, ServerCallContext context);
+        Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context)
+            where THandler : IHandler<TRequest, TResponse>;
     }
 }
 

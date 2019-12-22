@@ -22,6 +22,7 @@ namespace MiP.Grpc
             public const string Method = "{Method}";
             public const string Request = "{Request}";
             public const string Response = "{Response}";
+            public const string Handler = "{Handler}";
         }
 
         private const string Base = "Base";
@@ -43,7 +44,7 @@ public class {Class} : {BaseClass}
         public const string MethodCode = @"
     public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
-        return await _dispatcher.Dispatch<{Request}, {Response}>(request, context);
+        return await _dispatcher.Dispatch<{Request}, {Response}, {Handler}>(request, context);
     }
 ";
 
@@ -51,36 +52,44 @@ public class {Class} : {BaseClass}
 return typeof({Class});
 ";
 
+        public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
+
+        private IDispatcherMapBuilder _dispatcherMap;
+
+        public DispatcherCompiler(IDispatcherMapBuilder dispatcherMap)
+        {
+            _dispatcherMap = dispatcherMap;
+        }
+
         public Type CompileDispatcher(Type serviceBaseType)
         {
-            string source = GenerateSource(serviceBaseType);
+            var (source, types) = GenerateSource(serviceBaseType);
 
-            var result = CompileToType(source, serviceBaseType);
+            var result = CompileToType(source, types);
 
             return result;
         }
 
-        private static Type CompileToType(string source, Type serviceBaseType)
+        private static Type CompileToType(string source, IEnumerable<Type> importTypes)
         {
             try
             {
-                var types = new[] 
+                var types = new[]
                 {
-                    serviceBaseType,
                     typeof(IServiceProvider),
                     typeof(Task<>),
                     typeof(IHandler<,>),
                     typeof(ServerCallContext),
                     typeof(Proto.Empty)
-                };
+                }.Concat(importTypes);
 
                 var type = CSharpScript.EvaluateAsync<Type>(source,
                     ScriptOptions.Default
                         .WithReferences(
-                            types.Select(t => t.Assembly)
+                            types.Select(t => t.Assembly).Distinct()
                             )
                         .WithImports(
-                            types.Select(t => t.Namespace)
+                            types.Select(t => t.Namespace).Distinct()
                             )
                     )
                     .GetAwaiter().GetResult();
@@ -98,7 +107,7 @@ return typeof({Class});
             }
         }
 
-        private string GenerateSource(Type serviceBase)
+        private (string source, IReadOnlyCollection<Type> usedTypes) GenerateSource(Type serviceBase)
         {
             var definitions = GetMethodsToImplement(serviceBase);
 
@@ -110,7 +119,11 @@ return typeof({Class});
 
             source += ReturnTypeCode.Replace(Tag.Class, implName, StringComparison.Ordinal);
 
-            return source;
+            var usedTypes = definitions.SelectMany(x => new[] { x.ConcreteHandlerType, x.RequestType, x.ResponseType })
+                .Concat(new[] { serviceBase })
+                .ToArray();
+
+            return (source, usedTypes);
         }
 
         private static string GetClassName(Type serviceBase)
@@ -145,10 +158,11 @@ return typeof({Class});
             return MethodCode
                 .Replace(Tag.Method, definition.MethodName, StringComparison.Ordinal)
                 .Replace(Tag.Request, definition.RequestType.Name, StringComparison.Ordinal)
-                .Replace(Tag.Response, definition.ResponseType.Name, StringComparison.Ordinal);
+                .Replace(Tag.Response, definition.ResponseType.Name, StringComparison.Ordinal)
+                .Replace(Tag.Handler, definition.ConcreteHandlerType.Name, StringComparison.Ordinal);
         }
 
-        private static IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)
+        private IEnumerable<QueryDefinition> GetMethodsToImplement(Type serviceBase)
         {
             var methods = serviceBase.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
@@ -159,22 +173,28 @@ return typeof({Class});
 
                 var parameters = method.GetParameters();
 
-                if (parameters.Length != 2)
+                if (parameters.Length != 2) // one parameter + ServerCallContext
                     continue;
 
                 if (parameters[1].ParameterType != typeof(ServerCallContext))
                     continue;
 
-                var returnType = method.ReturnType;
-                if (!returnType.IsGenericType)
+                var returnTaskType = method.ReturnType; // returnTaskType is Task<T> where T is the actual return type
+                if (!returnTaskType.IsGenericType)
                     continue;
 
-                if (returnType.GetGenericTypeDefinition() != typeof(Task<>))
+                if (returnTaskType.GetGenericTypeDefinition() != typeof(Task<>))
                     continue;
 
-                var returnTypeArgument = returnType.GetGenericArguments().Single();
+                string methodName = method.Name;
+                Type parameterType = parameters[0].ParameterType;
+                var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
-                var result = new QueryDefinition(method.Name, parameters[0].ParameterType, returnTypeArgument);
+                var handlerType = _dispatcherMap.FindHandler(methodName, parameterType, returnType);
+                if (handlerType == null)
+                    throw new InvalidOperationException($"No implementation found for IHandler<{parameterType.Name}, {returnType.Name}>");
+
+                var result = new QueryDefinition(methodName, parameterType, returnType, handlerType);
                 yield return result;
             }
         }

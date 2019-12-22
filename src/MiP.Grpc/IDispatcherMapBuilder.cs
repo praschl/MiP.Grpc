@@ -7,5 +7,7 @@ namespace MiP.Grpc
         IDispatcherMapBuilder Add<THandler>(string name);
 
         IDispatcherMapBuilder Add(Type handlerType, string name);
+
+        Type FindHandler(string methodName, Type parameterType, Type returnTypeArgument);
     }
 }

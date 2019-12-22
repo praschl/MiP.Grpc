@@ -14,9 +14,10 @@ namespace MiP.Grpc
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<TResponse> Dispatch<TRequest, TResponse>(TRequest request, ServerCallContext context)
+        public async Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context)
+            where THandler : IHandler<TRequest, TResponse>
         {
-            var query = _serviceProvider.GetRequiredService<IHandler<TRequest, TResponse>>();
+            var query = _serviceProvider.GetRequiredService<THandler>();
 
             return await query.RunAsync(request, context).ConfigureAwait(false);
         }

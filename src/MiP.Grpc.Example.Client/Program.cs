@@ -1,4 +1,5 @@
-﻿using Grpc.Net.Client;
+﻿using Google.Protobuf.WellKnownTypes;
+using Grpc.Net.Client;
 using Mip.Grpc.Example;
 using System;
 using System.Threading.Tasks;
@@ -21,14 +22,14 @@ namespace MiP.Grpc.Example.Client
                     Name = "Michael 1"
                 });
                 Console.WriteLine(result1.Message);
+                await Task.Delay(200);
 
                 result1 = await client.SayHelloAsync(new HelloRequest
                 {
                     Name = "Michael 2"
                 });
                 Console.WriteLine(result1.Message);
-
-                await Task.Delay(1000);
+                await Task.Delay(200);
 
                 var result2 = await client.SayHowdyAsync(new HowdyRequest
                 {
@@ -36,6 +37,7 @@ namespace MiP.Grpc.Example.Client
                     Number = 1
                 });
                 Console.WriteLine(result2.Message + Environment.NewLine + result2.Number);
+                await Task.Delay(200);
 
                 result2 = await client.SayHowdyAsync(new HowdyRequest
                 {
@@ -43,6 +45,16 @@ namespace MiP.Grpc.Example.Client
                     Number = 1
                 });
                 Console.WriteLine(result2.Message + Environment.NewLine + result2.Number);
+                await Task.Delay(200);
+
+                await client.AskNothingAsync(new Empty());
+                Console.WriteLine("nothing asked");
+                await Task.Delay(200);
+
+                await client.SayNothingAsync(new Empty());
+                Console.WriteLine("nothing said");
+                await Task.Delay(200);
+
             }
             catch (Exception ex)
             {

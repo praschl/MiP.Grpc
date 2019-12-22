@@ -13,7 +13,7 @@ service Greeter {
 
   // two methods with Empty / Empty should be supported
   rpc SayNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
-  // rpc AskNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc AskNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message HelloRequest {
