@@ -14,7 +14,7 @@ namespace MiP.Grpc
             _serviceProvider = serviceProvider;
         }
 
-        public async Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context)
+        public async Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context, string methodName)
             where THandler : IHandler<TRequest, TResponse>
         {
             var query = _serviceProvider.GetRequiredService<THandler>();

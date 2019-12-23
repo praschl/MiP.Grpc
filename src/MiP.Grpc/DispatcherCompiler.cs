@@ -54,11 +54,11 @@ return typeof({Class});
 
         public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
 
-        private readonly IDispatcherMapBuilder _dispatcherMap;
+        private readonly IHandlerStore _handlerStore;
 
-        public DispatcherCompiler(IDispatcherMapBuilder dispatcherMap)
+        public DispatcherCompiler(IHandlerStore handlerStore)
         {
-            _dispatcherMap = dispatcherMap;
+            _handlerStore = handlerStore;
         }
 
         public Type CompileDispatcher(Type serviceBaseType)
@@ -203,7 +203,7 @@ return typeof({Class});
                 Type parameterType = parameters[0].ParameterType;
                 var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
-                var handlerType = _dispatcherMap.FindHandler(methodName, parameterType, returnType);
+                var handlerType = _handlerStore.FindHandler(methodName, parameterType, returnType);
                 if (handlerType == null)
                     throw new InvalidOperationException($"Couldn't find a type that implements IHandler<{parameterType.Name}, {returnType.Name}> to handle method {returnType.Name} {methodName}({parameterType.Name}, ServerCallContext)");
 

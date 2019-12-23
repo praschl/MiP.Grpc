@@ -6,7 +6,7 @@ using System.Reflection;
 
 namespace MiP.Grpc
 {
-    internal class DispatcherMapBuilder : IDispatcherMapBuilder
+    internal class DispatcherMapBuilder : IDispatcherMapBuilder, IHandlerStore
     {
         private readonly List<DispatcherMap> _dispatcherMaps = new List<DispatcherMap>();
 

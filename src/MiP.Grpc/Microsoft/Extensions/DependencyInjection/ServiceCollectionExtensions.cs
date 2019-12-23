@@ -1,8 +1,6 @@
 ﻿using MiP.Grpc;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -14,7 +12,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// and registers them as handlers.
         /// </summary>
         /// <param name="services">The service collection.</param>
-        /// <param name="fromAssemblies">Assemblies that should be scanned for types which implement <see cref="IHandler{TRequest, TResponse}"/>.</param>
         /// <returns>The <paramref name="services"/>.</returns>
         public static IServiceCollection AddDispatchedGrpcHandlers(this IServiceCollection services,
             Action<IDispatcherMapBuilder> buildDispatcherMap = null
@@ -23,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddTransient<IDispatcher, Dispatcher>();
 
             DispatcherMapBuilder mapBuilder = new DispatcherMapBuilder();
-            services.AddSingleton<IDispatcherMapBuilder>(mapBuilder);
+            services.AddSingleton<IHandlerStore>(mapBuilder);
 
             buildDispatcherMap?.Invoke(mapBuilder);
 

@@ -18,10 +18,10 @@ namespace Microsoft.AspNetCore.Builder
             if (serviceBaseType == null)
                 throw new ArgumentNullException(nameof(serviceBaseType));
 
-            var dispatcherMap = serviceProvider.GetService<IDispatcherMapBuilder>();
+            var handlerStore = serviceProvider.GetService<IHandlerStore>();
 
             // compile a dispatchertype
-            DispatcherCompiler compiler = new DispatcherCompiler(dispatcherMap);
+            DispatcherCompiler compiler = new DispatcherCompiler(handlerStore);
             var dispatcherType = compiler.CompileDispatcher(serviceBaseType);
 
             // now we need to call a generic method without having a generic type parameter
