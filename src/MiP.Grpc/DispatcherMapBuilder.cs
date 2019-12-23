@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 
 namespace MiP.Grpc
 {
@@ -28,6 +29,13 @@ namespace MiP.Grpc
             return this;
         }
 
+        public IDispatcherMapBuilder Add(Assembly assembly)
+        {
+            AddHandlersFromAssembly(assembly);
+
+            return this;
+        }
+
         public Type FindHandler(string methodName, Type parameterType, Type returnType)
         {
             var requestedServiceType = typeof(IHandler<,>).MakeGenericType(parameterType, returnType);
@@ -40,7 +48,25 @@ namespace MiP.Grpc
             return map?.HandlerType;
         }
 
-        internal void Add(HandlerInfo handlerInfo, string name)
+        private void AddHandlersFromAssembly(Assembly assembly)
+        {
+            var handlerInfos = GetTypeInfos(assembly.GetTypes());
+
+            foreach (var handlerInfo in handlerInfos)
+            {
+                Add(handlerInfo, null);
+            }
+        }
+
+        private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types)
+        {
+            var handlerInfos = types.Select(DispatcherMapBuilder.GetIHandlers)
+                .Where(hi => hi.ServiceTypes.Count > 0);
+
+            return handlerInfos;
+        }
+
+        private void Add(HandlerInfo handlerInfo, string name)
         {
             name ??= handlerInfo.GetPreferredName();
 
@@ -71,7 +97,7 @@ namespace MiP.Grpc
             Add(handlerInfo, name);
         }
 
-        internal static HandlerInfo GetIHandlers(Type type)
+        private static HandlerInfo GetIHandlers(Type type)
         {
             var interfaces = type.GetInterfaces();
 

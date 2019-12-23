@@ -14,9 +14,11 @@ namespace Mip.Grpc.Example
 
             // add handlers implementing IHandler<TRequest, TResponse>
             // these are the implementations the grpc requests will be forwarded to.
-            services.AddDispatchedGrpcHandlers(new[] { typeof(Startup).Assembly },
+            services.AddDispatchedGrpcHandlers(
                 builder => 
                 {
+                    builder.Add(typeof(Startup).Assembly);
+
                     // override the default SayNothingHandler
                     builder.Add<AlternativeSayNothingHandler>(nameof(Greeter.GreeterBase.SayNothing));
                 });

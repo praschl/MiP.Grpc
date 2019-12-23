@@ -54,7 +54,7 @@ return typeof({Class});
 
         public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
 
-        private IDispatcherMapBuilder _dispatcherMap;
+        private readonly IDispatcherMapBuilder _dispatcherMap;
 
         public DispatcherCompiler(IDispatcherMapBuilder dispatcherMap)
         {

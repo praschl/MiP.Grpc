@@ -17,7 +17,6 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="fromAssemblies">Assemblies that should be scanned for types which implement <see cref="IHandler{TRequest, TResponse}"/>.</param>
         /// <returns>The <paramref name="services"/>.</returns>
         public static IServiceCollection AddDispatchedGrpcHandlers(this IServiceCollection services,
-            Assembly[] fromAssemblies = null,
             Action<IDispatcherMapBuilder> buildDispatcherMap = null
             )
         {
@@ -26,16 +25,6 @@ namespace Microsoft.Extensions.DependencyInjection
             DispatcherMapBuilder mapBuilder = new DispatcherMapBuilder();
             services.AddSingleton<IDispatcherMapBuilder>(mapBuilder);
 
-            // first take all automatic
-            if (fromAssemblies != null)
-            {
-                foreach (var assembly in fromAssemblies)
-                {
-                    AddHandlersFromAssembly(assembly, mapBuilder);
-                }
-            }
-
-            // then the manually added to overwrite, if needed
             buildDispatcherMap?.Invoke(mapBuilder);
 
             // and register them
@@ -49,24 +38,6 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             return services;
-        }
-
-        private static void AddHandlersFromAssembly(Assembly assembly, DispatcherMapBuilder mapBuilder)
-        {
-            var handlerInfos = GetTypeInfos(assembly.GetTypes());
-
-            foreach (var handlerInfo in handlerInfos)
-            {
-                mapBuilder.Add(handlerInfo, null);
-            }
-        }
-
-        private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types)
-        {
-            var handlerInfos = types.Select(DispatcherMapBuilder.GetIHandlers)
-                .Where(hi => hi.ServiceTypes.Count > 0);
-
-            return handlerInfos;
         }
     }
 }

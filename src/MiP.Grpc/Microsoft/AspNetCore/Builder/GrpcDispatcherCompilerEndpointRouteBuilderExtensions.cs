@@ -20,17 +20,19 @@ namespace Microsoft.AspNetCore.Builder
 
             var dispatcherMap = serviceProvider.GetService<IDispatcherMapBuilder>();
 
+            // compile a dispatchertype
             DispatcherCompiler compiler = new DispatcherCompiler(dispatcherMap);
-
             var dispatcherType = compiler.CompileDispatcher(serviceBaseType);
 
+            // now we need to call a generic method without having a generic type parameter
             var extensionsType = typeof(GrpcEndpointRouteBuilderExtensions);
 
+            // so we get the method, add the type parameter with reflection and invoke it.
             var method = extensionsType.GetMethod(nameof(GrpcEndpointRouteBuilderExtensions.MapGrpcService));
             var generic = method.MakeGenericMethod(dispatcherType);
-            var invocationResult = generic.Invoke(null, new[] { builder });
+            var endpointConventionBuilder = (GrpcServiceEndpointConventionBuilder)generic.Invoke(null, new[] { builder });
 
-            return (GrpcServiceEndpointConventionBuilder)invocationResult;
+            return endpointConventionBuilder;
         }
     }
 }

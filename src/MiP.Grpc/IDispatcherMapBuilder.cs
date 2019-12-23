@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 
 namespace MiP.Grpc
 {
@@ -7,6 +8,8 @@ namespace MiP.Grpc
         IDispatcherMapBuilder Add<THandler>(string name);
 
         IDispatcherMapBuilder Add(Type handlerType, string name);
+
+        IDispatcherMapBuilder Add(Assembly assembly);
 
         Type FindHandler(string methodName, Type parameterType, Type returnTypeArgument);
     }
