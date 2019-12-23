@@ -36,7 +36,7 @@ namespace MiP.Grpc.Example.Client
                     Name = "Simon 1",
                     Number = 1
                 });
-                Console.WriteLine(result2.Message + Environment.NewLine + result2.Number);
+                Console.WriteLine(result2.Message + "-" + result2.Number);
                 await Task.Delay(200);
 
                 result2 = await client.SayHowdyAsync(new HowdyRequest
@@ -44,7 +44,7 @@ namespace MiP.Grpc.Example.Client
                     Name = "Simon 2",
                     Number = 1
                 });
-                Console.WriteLine(result2.Message + Environment.NewLine + result2.Number);
+                Console.WriteLine(result2.Message + "-" + result2.Number);
                 await Task.Delay(200);
 
                 await client.AskNothingAsync(new Empty());

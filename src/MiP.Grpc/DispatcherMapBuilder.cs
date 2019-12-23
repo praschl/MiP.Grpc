@@ -15,6 +15,7 @@ namespace MiP.Grpc
             get => _dispatcherMaps;
         }
 
+        // TODO: when name is null or empty, get the name from class name or attribute
         public IDispatcherMapBuilder Add<THandler>(string name)
         {
             AddInternal(typeof(THandler), name);
@@ -22,6 +23,7 @@ namespace MiP.Grpc
             return this;
         }
 
+        // TODO: when name is null or empty, get the name from class name or attribute
         public IDispatcherMapBuilder Add(Type handlerType, string name)
         {
             AddInternal(handlerType, name);
@@ -68,7 +70,8 @@ namespace MiP.Grpc
 
         private void Add(HandlerInfo handlerInfo, string name)
         {
-            name ??= handlerInfo.GetPreferredName();
+            if (string.IsNullOrEmpty(name))
+                name = handlerInfo.GetPreferredName();
 
             foreach (var service in handlerInfo.ServiceTypes)
             {
@@ -77,7 +80,7 @@ namespace MiP.Grpc
                 var existing = _dispatcherMaps.Where(h => h.MethodName == name && h.ServiceType == service).ToArray();
                 if (existing.Length > 0)
                 {
-                    Debug.WriteLine($"There is already a combination of Name '{name}' and [{service}].");
+                    Debug.WriteLine($"There is already a handler for method '{name}' and [{service}]. It will be removed and [{implementation.FullName}] will handle that.");
                     foreach (var item in existing)
                     {
                         // unregister this one, so we dont have duplicates
@@ -93,6 +96,9 @@ namespace MiP.Grpc
         private void AddInternal(Type handlerType, string name)
         {
             var handlerInfo = GetIHandlers(handlerType);
+
+            if (handlerInfo.ServiceTypes.Count == 0)
+                throw new InvalidOperationException($"Type [{handlerType.FullName}] has no implementation of [{typeof(IHandler<,>).FullName}].");
 
             Add(handlerInfo, name);
         }

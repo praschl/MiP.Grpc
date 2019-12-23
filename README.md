@@ -1,5 +1,5 @@
 # MiP.Grpc
-Extensions for Grpc Services
+Extensions for Grpc Services which simplifies separating implementations into command/query like implementation classes.
 
 ## The Problem
 You have defined a big Grpc Service in protobuff in Visual Studio and now, you have to implement it.
@@ -63,22 +63,75 @@ public class SayHelloHandler : IHandler<HelloRequest, HelloReply>
     }
 }
 ```
-The handler needs to be registered in the `ConfigureServices()` method, which can be done in two ways, you can either do it explicitly, by calling
+The handler needs to be registered in the `ConfigureServices()` method, which can be done in two ways. The method is passed an action which gets a `IDispatcherMapBuilder` as parameter. This builder can then be used to add types manually or all implementations of `IHandler<,>` of an assembly automatically.
+
+#### Add assembly types
 ```csharp
-services.AddTransient<IHandler<HelloRequest, HelloReply>>();
+services.AddDispatchedGrpcHandlers(builder =>
+  builder.Add(Assembly.GetExecutingAssembly()));
 ```
-or by passing the assembly where all your handlers are implemented to the `AddDispatchedGrpcHandlers()` call
+The method will scan for types implementing `IHandler<TRequest, TResponse>` and register them with a transient lifetime.
+
+Per convention, a found implementation thats called "SayHelloHandler" will handle the "SayHello" method. However you can handle a method with another name, if you add the `HandlesAttribute` to the class:
 ```csharp
-services.AddDispatchedGrpcHandlers(new[] { Assembly.GetExecutingAssembly() });
+[Handles("SayHello")] // class will handle the "SayHello" method regardless of its name.
+public class CanHandleSay : IHandler<CanHandleSomeRequest, CanHandleSomeResponse>
+{
+  // ...
+}
 ```
-In this example, the handlers would have to be in the same assembly as the grpc service host. The method will scan for types implementing `IHandler<TRequest, TResponse>` and register them with a transient lifetime.
+Priority of finding the name is
+1. `HandlesAttribute`s MethodName property
+2. Name of class without "Handler"
+3. Name of class
+
+#### Add types manually
+```csharp
+services.AddDispatchedGrpcHandlers(builder => 
+  {
+    builder.Add(typeof(MyHandler), "MyMethod");
+    // or
+    builder.Add<MyHandler>("MyMethod");
+  });
+```
+Passing the name is optional, priorities for chosing the name are
+1. name Parameter
+2. `HandlesAttribute`s MethodName property
+3. Name of class without "Handler"
+4. Name of class
+
+And you can also combine them in any order:
+```csharp
+services.AddDispatchedGrpcHandlers(builder => 
+{
+  builder.Add(assembly1);
+  builder.Add(typeof(Handler1), "method1");
+  builder.Add<Handler3>("method3");
+  builder.Add(typeof(Handler2), "method2");
+  builder.Add(assembly2);
+  builder.Add<Handler4>("method4");
+});
+```
+although I would suggest to use assemblies first, and then override with custom implementations.
+
+Types are added in the same order they are added, if there is already a Handler for a methodName that has the same `TRequest` and `TResponse` types, the older one is discarded and the new one takes its place. This makes it possible to add all types from assemblies, and then overwrite some specific handlers.
 
 ### Gotcha
-Currently it's not possible to have two service methods share the `TRequest` and `TResponse` type, since net.core does not directly support registering named services. 
+It's important that there is only one call to `AddDispatchedGrpcHandlers`, but you can register as many assemblies and types as you want in this one call. Calling `AddDispatchedGrpcHandlers` would completely discard the first call.
 
-If a service has two methods sharing both `TRequest` and `TResponse`, both would be handled by the same handler.
+Types registered directly on the service collection are not recognised as handlers and can currently not be used.
 
-This also means there is futile to implement two handlers for the same `TRequest` and `TResponse` as only one of them will ever be called.
+## Special Types
+The `Google.Protobuf.WellKnownTypes.Empty` class can be used, if you do not require parameters or return types, but a handler still has to use the class as parameter and/or return type:
+```csharp
+public class IHandler<Empty, Empty>
+{
+  Task<Empty> RunAsync(Empty request) 
+  {
+    return Task.FromResult(new Empty());
+  }
+}
+```
 
 ## Extension
 Each method of the implemented service does one very simple thing, it calls 

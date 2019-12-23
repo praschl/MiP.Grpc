@@ -15,7 +15,7 @@ namespace Mip.Grpc.Example
             // add handlers implementing IHandler<TRequest, TResponse>
             // these are the implementations the grpc requests will be forwarded to.
             services.AddDispatchedGrpcHandlers(
-                builder => 
+                builder =>
                 {
                     builder.Add(typeof(Startup).Assembly);
 
