@@ -28,10 +28,6 @@ namespace Microsoft.Extensions.DependencyInjection
             foreach (var group in mapBuilder.DispatcherMaps.GroupBy(i => i.HandlerType))
             {
                 services.AddTransient(group.Key);
-                foreach (var item in group)
-                {
-                    services.AddTransient(item.ServiceType, group.Key);
-                }
             }
 
             return services;

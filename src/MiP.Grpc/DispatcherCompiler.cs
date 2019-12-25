@@ -122,8 +122,10 @@ return typeof({Class});
 
             var baseClassName = serviceBaseType.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
 
+            // get source of the class with all its methods
             var source = GenerateSource(methodHandlerDefinitions, className, baseClassName);
 
+            // add a line which returns the Type of that class from the script.
             source += ReturnTypeCode.Replace(Tag.Class, className, StringComparison.Ordinal);
 
             var usedTypes = methodHandlerDefinitions.SelectMany(x => new[] { x.HandlerType, x.RequestType, x.ResponseType })
@@ -174,7 +176,7 @@ return typeof({Class});
             var methods = serviceBase.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
             // methods that can be implemented have
-            // - return type of Task<T>
+            // - return type of Task<T> where T is the type of the response
             // - 2 arguments where the 
             //   - first is the actual argument
             //   - second is of type ServerCallContext
@@ -205,7 +207,7 @@ return typeof({Class});
 
                 var handlerType = _handlerStore.FindHandler(methodName, parameterType, returnType);
                 if (handlerType == null)
-                    throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{returnType.Name} {methodName}({parameterType.Name}], ServerCallContext)");
+                    throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{returnType.Name} {methodName}({parameterType.Name}, ServerCallContext)]");
 
                 var result = new MethodHandlerDefinition(methodName, parameterType, returnType, handlerType);
                 yield return result;

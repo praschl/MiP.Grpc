@@ -15,7 +15,6 @@ namespace MiP.Grpc
             get => _dispatcherMaps;
         }
 
-        // TODO: when name is null or empty, get the name from class name or attribute
         public IDispatcherMapBuilder Add<THandler>(string name)
         {
             AddInternal(typeof(THandler), name);
@@ -23,7 +22,6 @@ namespace MiP.Grpc
             return this;
         }
 
-        // TODO: when name is null or empty, get the name from class name or attribute
         public IDispatcherMapBuilder Add(Type handlerType, string name)
         {
             AddInternal(handlerType, name);
@@ -42,7 +40,7 @@ namespace MiP.Grpc
         {
             var requestedServiceType = typeof(IHandler<,>).MakeGenericType(parameterType, returnType);
 
-            var map = _dispatcherMaps.FirstOrDefault(m =>
+            var map = _dispatcherMaps.Find(m =>
                 m.MethodName == methodName
                 &&
                 m.ServiceType == requestedServiceType);
