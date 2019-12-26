@@ -1,6 +1,5 @@
 ﻿using MiP.Grpc;
 using System;
-using System.Linq;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -25,9 +24,9 @@ namespace Microsoft.Extensions.DependencyInjection
             buildDispatcherMap?.Invoke(mapBuilder);
 
             // and register them
-            foreach (var group in mapBuilder.DispatcherMaps.GroupBy(i => i.HandlerType))
+            foreach (var handler in mapBuilder.GetHandlers())
             {
-                services.AddTransient(group.Key);
+                services.AddTransient(handler);
             }
 
             return services;

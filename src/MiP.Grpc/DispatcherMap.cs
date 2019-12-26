@@ -4,15 +4,13 @@ namespace MiP.Grpc
 {
     internal class DispatcherMap
     {
-        public DispatcherMap(string methodName, Type handlerType, Type serviceType)
+        public DispatcherMap(DispatcherMapKey key, Type handlerType)
         {
-            MethodName = methodName;
+            Key = key;
             HandlerType = handlerType;
-            ServiceType = serviceType;
         }
 
-        public string MethodName { get; }
+        public DispatcherMapKey Key { get; }
         public Type HandlerType { get; }
-        public Type ServiceType { get; }
     }
 }

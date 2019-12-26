@@ -8,11 +8,11 @@ namespace MiP.Grpc
 {
     internal class DispatcherMapBuilder : IDispatcherMapBuilder, IHandlerStore
     {
-        private readonly List<DispatcherMap> _dispatcherMaps = new List<DispatcherMap>();
+        private readonly Dictionary<DispatcherMapKey, DispatcherMap> _dispatcherMaps = new Dictionary<DispatcherMapKey, DispatcherMap>();
 
-        public IReadOnlyList<DispatcherMap> DispatcherMaps
+        public IEnumerable<Type> GetHandlers()
         {
-            get => _dispatcherMaps;
+            return _dispatcherMaps.Values.GroupBy(m => m.HandlerType).Select(g => g.Key);
         }
 
         public IDispatcherMapBuilder Add<THandler>(string name)
@@ -40,10 +40,7 @@ namespace MiP.Grpc
         {
             var requestedServiceType = typeof(IHandler<,>).MakeGenericType(parameterType, returnType);
 
-            var map = _dispatcherMaps.Find(m =>
-                m.MethodName == methodName
-                &&
-                m.ServiceType == requestedServiceType);
+            _dispatcherMaps.TryGetValue(new DispatcherMapKey(methodName, requestedServiceType), out var map);
 
             return map?.HandlerType;
         }
@@ -60,7 +57,7 @@ namespace MiP.Grpc
 
         private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types)
         {
-            var handlerInfos = types.Select(DispatcherMapBuilder.GetIHandlers)
+            var handlerInfos = types.Select(GetIHandlers)
                 .Where(hi => hi.ServiceTypes.Count > 0);
 
             return handlerInfos;
@@ -75,19 +72,15 @@ namespace MiP.Grpc
             {
                 Type implementation = handlerInfo.Implementation;
 
-                var existing = _dispatcherMaps.Where(h => h.MethodName == name && h.ServiceType == service).ToArray();
-                if (existing.Length > 0)
+                var key = new DispatcherMapKey(name, service);
+                if (_dispatcherMaps.ContainsKey(key))
                 {
                     Debug.WriteLine($"There is already a handler for method '{name}' and [{service}]. It will be removed and [{implementation.FullName}] will handle that.");
-                    foreach (var item in existing)
-                    {
-                        // unregister this one, so we dont have duplicates
-                        _dispatcherMaps.Remove(item);
-                    }
+                    _dispatcherMaps.Remove(key);
                 }
 
-                var newMap = new DispatcherMap(name, implementation, service);
-                _dispatcherMaps.Add(newMap);
+                var newMap = new DispatcherMap(key, implementation);
+                _dispatcherMaps.Add(key, newMap);
             }
         }
 
