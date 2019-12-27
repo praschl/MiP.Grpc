@@ -4,6 +4,6 @@ namespace MiP.Grpc
 {
     internal interface IHandlerStore
     {
-        Type FindHandler(string methodName, Type parameterType, Type returnTypeArgument);
+        DispatcherMap FindHandlerMap(string methodName, Type parameterType, Type returnTypeArgument);
     }
 }

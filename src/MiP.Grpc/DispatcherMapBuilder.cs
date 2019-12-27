@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Grpc.Core;
+using Microsoft.AspNetCore.Authorization;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -36,13 +38,11 @@ namespace MiP.Grpc
             return this;
         }
 
-        public Type FindHandler(string methodName, Type parameterType, Type returnType)
+        public DispatcherMap FindHandlerMap(string methodName, Type parameterType, Type returnType)
         {
-            var requestedServiceType = typeof(IHandler<,>).MakeGenericType(parameterType, returnType);
+            _dispatcherMaps.TryGetValue(new DispatcherMapKey(methodName, parameterType, returnType), out var map);
 
-            _dispatcherMaps.TryGetValue(new DispatcherMapKey(methodName, requestedServiceType), out var map);
-
-            return map?.HandlerType;
+            return map;
         }
 
         private void AddHandlersFromAssembly(Assembly assembly)
@@ -58,7 +58,7 @@ namespace MiP.Grpc
         private static IEnumerable<HandlerInfo> GetTypeInfos(IEnumerable<Type> types)
         {
             var handlerInfos = types.Select(GetIHandlers)
-                .Where(hi => hi.ServiceTypes.Count > 0);
+                .Where(hi => hi.ServiceArgs.Count > 0);
 
             return handlerInfos;
         }
@@ -68,18 +68,31 @@ namespace MiP.Grpc
             if (string.IsNullOrEmpty(name))
                 name = handlerInfo.GetPreferredName();
 
-            foreach (var service in handlerInfo.ServiceTypes)
+            // store the AuthorizeAttributes from the implementing class
+            var classAttributes = handlerInfo.Implementation.GetCustomAttributes<AuthorizeAttribute>();
+
+            foreach (var args in handlerInfo.ServiceArgs)
             {
                 Type implementation = handlerInfo.Implementation;
 
-                var key = new DispatcherMapKey(name, service);
+                var key = new DispatcherMapKey(name, args.RequestType, args.ResponseType);
                 if (_dispatcherMaps.ContainsKey(key))
                 {
-                    Debug.WriteLine($"There is already a handler for method '{name}' and [{service}]. It will be removed and [{implementation.FullName}] will handle that.");
+                    Debug.WriteLine($"There is already a handler for method [{Format.Method(name, args.RequestType, args.ResponseType)}]. It will be removed and [{implementation.FullName}] will handle that.");
                     _dispatcherMaps.Remove(key);
                 }
 
-                var newMap = new DispatcherMap(key, implementation);
+                var method = implementation.GetMethod(
+                    nameof(IHandler<object, object>.RunAsync), 
+                    new[] { args.RequestType, typeof(ServerCallContext) });
+
+                if (method == null)
+                    throw new InvalidOperationException($"Could not find expected method [{Format.Method(name, args.RequestType, args.ResponseType)}]");
+
+                // add the AuthorizeAttributes from the method, the class could implement more than just one IHandler<,>
+                var methodAttributes = method.GetCustomAttributes<AuthorizeAttribute>();
+
+                var newMap = new DispatcherMap(key, implementation, classAttributes.Concat(methodAttributes).ToArray());
                 _dispatcherMaps.Add(key, newMap);
             }
         }
@@ -88,7 +101,7 @@ namespace MiP.Grpc
         {
             var handlerInfo = GetIHandlers(handlerType);
 
-            if (handlerInfo.ServiceTypes.Count == 0)
+            if (handlerInfo.ServiceArgs.Count == 0)
                 throw new InvalidOperationException($"Type [{handlerType.FullName}] has no implementation of [{typeof(IHandler<,>).FullName}].");
 
             Add(handlerInfo, name);
@@ -103,7 +116,13 @@ namespace MiP.Grpc
                 i.GetGenericTypeDefinition() == typeof(IHandler<,>)
                 );
 
-            return new HandlerInfo(type, services.ToArray());
+            var serviceTypes = services.Select(s =>
+            {
+                var typeArgs = s.GetGenericArguments();
+                return new HandlerArgs(typeArgs[0], typeArgs[1]);
+            }).ToArray();
+
+            return new HandlerInfo(type, serviceTypes);
         }
     }
 }

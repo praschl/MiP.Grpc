@@ -133,6 +133,16 @@ public class IHandler<Empty, Empty>
 }
 ```
 
+## Authorization
+Authorization is supported by the use of the `Microsoft.AspNetCore.Authorization.AuthorizeAttribute` attribute.
+
+That's the same attribute you would place on a method when implementing the service manually. Just place
+the attribute on the handling method and it will be copied to the handled method when the code is generated.
+If your handler implements more than just one `IHandler<,>` you can also place the attribute on the class to 
+activate authorization for all methods of this handler class.
+
+There is currently no way to add authorization to all methods of the service.
+
 ## Extension
 Each method of the implemented service does one very simple thing, it calls 
 ```csharp

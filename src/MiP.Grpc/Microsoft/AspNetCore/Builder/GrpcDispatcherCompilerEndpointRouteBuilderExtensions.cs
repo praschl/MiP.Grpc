@@ -18,6 +18,8 @@ namespace Microsoft.AspNetCore.Builder
             if (serviceBaseType == null)
                 throw new ArgumentNullException(nameof(serviceBaseType));
 
+            // TODO: add possibility to add AuthorizationAttribute to all methods of the service of parameter serviceBaseType
+
             var handlerStore = serviceProvider.GetService<IHandlerStore>();
 
             // compile a dispatchertype

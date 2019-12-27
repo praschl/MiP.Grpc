@@ -7,12 +7,12 @@ namespace MiP.Grpc
     internal class HandlerInfo
     {
         public Type Implementation { get; set; }
-        public IReadOnlyList<Type> ServiceTypes { get; set; }
+        public IReadOnlyList<HandlerArgs> ServiceArgs { get; set; }
 
-        public HandlerInfo(Type implementation, IReadOnlyList<Type> serviceTypes)
+        public HandlerInfo(Type implementation, IReadOnlyList<HandlerArgs> serviceTypes)
         {
             Implementation = implementation;
-            ServiceTypes = serviceTypes;
+            ServiceArgs = serviceTypes;
         }
 
         public string GetPreferredName()

@@ -7,9 +7,11 @@ using System.Threading.Tasks;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Proto = Google.Protobuf.WellKnownTypes;
+using Microsoft.AspNetCore.Authorization;
 
 namespace MiP.Grpc
 {
+    // TODO: code generation is pretty big by now. improve it by using StringBuilder.
     internal class DispatcherCompiler
     {
         private static class Tag
@@ -23,6 +25,12 @@ namespace MiP.Grpc
             public const string Request = "{Request}";
             public const string Response = "{Response}";
             public const string Handler = "{Handler}";
+
+            public const string Policy = "{Policy}";
+            public const string Roles = "{Roles}";
+            public const string AuthenticationSchemes = "{AuthenticationSchemes}";
+            public const string Attributes = "{Attributes}";
+            public const string AttributeProperties = "{AttributeProperties}";
         }
 
         private const string Base = "Base";
@@ -41,7 +49,7 @@ public class {Class} : {BaseClass}
     }
 ";
 
-        public const string MethodCode = @"
+        public const string MethodCode = @"{Attributes}
     public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
         return await _dispatcher.Dispatch<{Request}, {Response}, {Handler}>(request, context);
@@ -51,6 +59,13 @@ public class {Class} : {BaseClass}
         public const string ReturnTypeCode = @"
 return typeof({Class});
 ";
+
+        public const string AuthorizeAttributeCode = @"
+    [Authorize({AttributeProperties})]";
+
+        public const string PolicyPropertyCode = @"Policy = ""{Policy}""";
+        public const string RolesPropertyCode = @"Roles = ""{Roles}""";
+        public const string AuthenticationSchemesPropertyCode = @"AuthenticationSchemes = ""{AuthenticationSchemes}""";
 
         public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
 
@@ -65,9 +80,9 @@ return typeof({Class});
         {
             try
             {
-                var (source, types) = GenerateSource(serviceBaseType);
+                var result = GenerateSource(serviceBaseType);
 
-                var dispatcherType = CompileToType(source, types);
+                var dispatcherType = CompileToType(result.Source, result.UsedTypes);
 
                 return dispatcherType;
             }
@@ -87,6 +102,7 @@ return typeof({Class});
                     typeof(Task<>),
                     typeof(IHandler<,>),
                     typeof(ServerCallContext),
+                    typeof(AuthorizeAttribute),
                     typeof(Proto.Empty)
                 }.Concat(importTypes);
 
@@ -114,25 +130,25 @@ return typeof({Class});
             }
         }
 
-        private (string source, IReadOnlyCollection<Type> usedTypes) GenerateSource(Type serviceBaseType)
+        private GenerateSourceResult GenerateSource(Type serviceBaseType)
         {
-            var methodHandlerDefinitions = GetMethodsToImplement(serviceBaseType);
+            var handlerMaps = GetMethodsToImplement(serviceBaseType);
 
             var className = GetClassName(serviceBaseType);
 
             var baseClassName = serviceBaseType.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
 
             // get source of the class with all its methods
-            var source = GenerateSource(methodHandlerDefinitions, className, baseClassName);
+            var source = GenerateSource(handlerMaps, className, baseClassName);
 
             // add a line which returns the Type of that class from the script.
             source += ReturnTypeCode.Replace(Tag.Class, className, StringComparison.Ordinal);
 
-            var usedTypes = methodHandlerDefinitions.SelectMany(x => new[] { x.HandlerType, x.RequestType, x.ResponseType })
+            var usedTypes = handlerMaps.SelectMany(x => new[] { x.HandlerType, x.Key.RequestType, x.Key.ResponseType })
                 .Concat(new[] { serviceBaseType })
                 .ToArray();
 
-            return (source, usedTypes);
+            return new GenerateSourceResult(source, usedTypes);
         }
 
         private static string GetClassName(Type serviceBaseType)
@@ -147,12 +163,12 @@ return typeof({Class});
             return className;
         }
 
-        private string GenerateSource(IEnumerable<MethodHandlerDefinition> definitions, string className, string baseClassName)
+        private string GenerateSource(IEnumerable<DispatcherMap> handlerMaps, string className, string baseClassName)
         {
             var members =
                 ConstructorCode.Replace(Tag.Constructor, className, StringComparison.Ordinal)
                 +
-                string.Concat(definitions.Select(GenerateMethod));
+                string.Concat(handlerMaps.Select(GenerateMethod));
 
             var classSource = ClassCode
                 .Replace(Tag.Class, className, StringComparison.Ordinal)
@@ -162,16 +178,43 @@ return typeof({Class});
             return classSource;
         }
 
-        private string GenerateMethod(MethodHandlerDefinition definition)
+        private string GenerateMethod(DispatcherMap definition)
         {
+            string attributes = GenerateAttributes(definition.AuthorizeAttributes);
+
             return MethodCode
-                .Replace(Tag.Method, definition.MethodName, StringComparison.Ordinal)
-                .Replace(Tag.Request, definition.RequestType.Name, StringComparison.Ordinal)
-                .Replace(Tag.Response, definition.ResponseType.Name, StringComparison.Ordinal)
+                .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
+                .Replace(Tag.Method, definition.Key.MethodName, StringComparison.Ordinal)
+                .Replace(Tag.Request, definition.Key.RequestType.Name, StringComparison.Ordinal)
+                .Replace(Tag.Response, definition.Key.ResponseType.Name, StringComparison.Ordinal)
                 .Replace(Tag.Handler, definition.HandlerType.Name, StringComparison.Ordinal);
         }
 
-        private IEnumerable<MethodHandlerDefinition> GetMethodsToImplement(Type serviceBase)
+        private static string GenerateAttributes(IReadOnlyCollection<AuthorizeAttribute> authorizeAttributes)
+        {
+            var lines = authorizeAttributes.Select(a => AuthorizeAttributeCode
+                .Replace(Tag.AttributeProperties, GenerateAttributeProperties(a), StringComparison.Ordinal));
+
+            return string.Concat(lines);
+        }
+
+        private static string GenerateAttributeProperties(AuthorizeAttribute attribute)
+        {
+            List<string> properties = new List<string>(3);
+
+            if (attribute.Roles != null)
+                properties.Add(RolesPropertyCode.Replace(Tag.Roles, attribute.Roles, StringComparison.Ordinal));
+
+            if (attribute.Policy != null)
+                properties.Add(PolicyPropertyCode.Replace(Tag.Policy, attribute.Policy, StringComparison.Ordinal));
+
+            if (attribute.AuthenticationSchemes != null)
+                properties.Add(AuthenticationSchemesPropertyCode.Replace(Tag.AuthenticationSchemes, attribute.AuthenticationSchemes, StringComparison.Ordinal));
+
+            return string.Join(", ", properties);
+        }
+
+        private IEnumerable<DispatcherMap> GetMethodsToImplement(Type serviceBase)
         {
             var methods = serviceBase.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly);
 
@@ -205,14 +248,12 @@ return typeof({Class});
                 Type parameterType = parameters[0].ParameterType;
                 var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
-                var handlerType = _handlerStore.FindHandler(methodName, parameterType, returnType);
+                var handlerType = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
                 if (handlerType == null)
-                    throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{returnType.Name} {methodName}({parameterType.Name}, ServerCallContext)]");
+                    throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
 
-                var result = new MethodHandlerDefinition(methodName, parameterType, returnType, handlerType);
-                yield return result;
+                yield return handlerType;
             }
         }
     }
 }
-
