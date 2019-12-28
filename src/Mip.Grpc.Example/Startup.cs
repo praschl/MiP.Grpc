@@ -40,7 +40,10 @@ namespace Mip.Grpc.Example
                 //   endpoints.MapGrpcService<GreeterService>();
 
                 // but instead, you write
-                endpoints.CompileAndMapGrpcServiceDispatcher(app.ApplicationServices, typeof(Greeter.GreeterBase));
+                endpoints.CompileAndMapGrpcServiceDispatcher(app.ApplicationServices, typeof(Greeter.GreeterBase), cb => {
+                    //cb.AddGlobalAuthorization("glopoli1", "gloroli1", "gloschema1");
+                    //cb.AddGlobalAuthorization("glopoli2", "gloroli2", "gloschema2");
+                });
                 // this will compile a class deriving from Greeter.GreeterBase
                 // overriding its methods so that they get forwarded to implementations of IHandler<TRequest, TResponse>
 

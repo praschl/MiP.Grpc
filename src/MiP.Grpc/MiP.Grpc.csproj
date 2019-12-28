@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <Authors>Michael Praschl</Authors>
     <Company />
     <Description>A library providing extensions for Grpc
@@ -10,9 +10,22 @@
     <PackageProjectUrl>https://github.com/praschl/MiP.Grpc</PackageProjectUrl>
     <RepositoryUrl>https://github.com/praschl/MiP.Grpc</RepositoryUrl>
     <RepositoryType>Github</RepositoryType>
-    <PackageTags>C# grpc</PackageTags>
+    <PackageTags>grpc;cqrs</PackageTags>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>0.1.1.0</AssemblyVersion>
+    <FileVersion>0.1.1.0</FileVersion>
+    <PackageReleaseNotes>This release adds
+- support for reuse of request and response type
+- support for authorization</PackageReleaseNotes>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netcoreapp3.1\MiP.Grpc.xml</DocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DocumentationFile>bin\Release\netcoreapp3.1\MiP.Grpc.xml</DocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>

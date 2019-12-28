@@ -3,14 +3,17 @@ using System;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>
+    /// Adds extention methods to the <see cref="IServiceCollection"/> that help with configuring and registering handlers for the grpc service dispatcher.
+    /// </summary>
     public static class ServiceCollectionExtensions
     {
         /// <summary>
         /// Registers the <see cref="IDispatcher"/>.
-        /// Scans all <paramref name="fromAssemblies"/> for types that implement <see cref="IHandler{TRequest, TResponse}"/>
-        /// and registers them as handlers.
         /// </summary>
         /// <param name="services">The service collection.</param>
+        /// <param name="buildDispatcherMap">An action that can be used to register all implementations of <see cref="IHandler{TRequest, TResponse}"/> 
+        /// of an assembly, or register handlers manually.</param>
         /// <returns>The <paramref name="services"/>.</returns>
         public static IServiceCollection AddDispatchedGrpcHandlers(this IServiceCollection services,
             Action<IDispatcherMapBuilder> buildDispatcherMap = null

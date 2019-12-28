@@ -36,7 +36,7 @@ namespace MiP.Grpc
         private const string Base = "Base";
         private const string Dispatcher = "Dispatcher";
 
-        public const string ClassCode = @"
+        public const string ClassCode = @"{Attributes}
 public class {Class} : {BaseClass}
 {{Members}}
 ";
@@ -70,10 +70,12 @@ return typeof({Class});
         public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
 
         private readonly IHandlerStore _handlerStore;
+        private readonly MapGrpcServiceConfiguration _configuration;
 
-        public DispatcherCompiler(IHandlerStore handlerStore)
+        public DispatcherCompiler(IHandlerStore handlerStore, MapGrpcServiceConfiguration configuration)
         {
             _handlerStore = handlerStore;
+            _configuration = configuration;
         }
 
         public Type CompileDispatcher(Type serviceBaseType)
@@ -165,12 +167,15 @@ return typeof({Class});
 
         private string GenerateSource(IEnumerable<DispatcherMap> handlerMaps, string className, string baseClassName)
         {
-            var members =
-                ConstructorCode.Replace(Tag.Constructor, className, StringComparison.Ordinal)
+            string attributes = GenerateAttributes(_configuration.GlobalAuthorizeAttributes);
+
+            var members = ConstructorCode
+                .Replace(Tag.Constructor, className, StringComparison.Ordinal)
                 +
                 string.Concat(handlerMaps.Select(GenerateMethod));
 
             var classSource = ClassCode
+                .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
                 .Replace(Tag.Class, className, StringComparison.Ordinal)
                 .Replace(Tag.BaseClass, baseClassName, StringComparison.Ordinal)
                 .Replace(Tag.Members, members, StringComparison.Ordinal);

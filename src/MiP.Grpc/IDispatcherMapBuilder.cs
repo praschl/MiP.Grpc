@@ -20,7 +20,7 @@ namespace MiP.Grpc
         /// Adds the <paramref name="handlerType"/> to the map.
         /// </summary>
         /// <param name="handlerType">The type of the handler that's added to the map.</param>
-        /// <param name="name">The name of the service method the <typeparamref name="THandler"/> handles.</param>
+        /// <param name="name">The name of the service method the <paramref name="handlerType"/> handles.</param>
         /// <returns><see cref="IDispatcherMapBuilder"/>.</returns>
         IDispatcherMapBuilder Add(Type handlerType, string name = null);
 
