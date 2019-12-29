@@ -9,6 +9,7 @@ using Microsoft.CodeAnalysis.Scripting;
 using Proto = Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
 using MiP.Grpc.Internal;
+using System.Diagnostics;
 
 namespace MiP.Grpc
 {
@@ -97,7 +98,7 @@ return typeof({Class});
 
                 return dispatcherType;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 throw new InvalidOperationException($"Generating implementation for service [{serviceBaseType.FullName}] failed", ex);
             }
@@ -109,7 +110,6 @@ return typeof({Class});
             {
                 var types = new[]
                 {
-                    typeof(IServiceProvider),
                     typeof(Task<>),
                     typeof(IDispatcher),
                     typeof(IHandler<,>),
@@ -148,9 +148,9 @@ return typeof({Class});
         {
             var handlerMaps = GetMethodsToImplement(serviceBaseType);
 
-            var className = GetClassName(serviceBaseType);
+            var className = GetGeneratedName(serviceBaseType);
 
-            var baseClassName = serviceBaseType.FullName.Replace("+", ".", StringComparison.Ordinal); // + is used by framework for nested classes
+            var baseClassName = GetNestedClassName(serviceBaseType); // + is used by framework for nested classes
 
             // get source of the class with all its methods
             var source = GenerateSource(handlerMaps, className, baseClassName);
@@ -165,7 +165,19 @@ return typeof({Class});
             return new GenerateSourceResult(source, usedTypes);
         }
 
-        private static string GetClassName(Type serviceBaseType)
+        private static string GetNestedClassName(Type serviceBaseType)
+        {
+            var className = serviceBaseType.Name;
+            while (serviceBaseType.IsNested)
+            {
+                serviceBaseType = serviceBaseType.DeclaringType;
+                className = serviceBaseType.Name + "." + className;
+            }
+
+            return className;
+        }
+
+        private static string GetGeneratedName(Type serviceBaseType)
         {
             var className = serviceBaseType.Name;
 
@@ -179,7 +191,7 @@ return typeof({Class});
 
         private string GenerateSource(IEnumerable<DispatcherMap> handlerMaps, string className, string baseClassName)
         {
-            string attributes = GenerateAttributes(_configuration.GlobalAuthorizeAttributes);
+            var attributes = GenerateAttributes(_configuration.GlobalAuthorizeAttributes);
 
             var members = Code.ConstructorCode
                 .Replace(Tag.Constructor, className, StringComparison.Ordinal)
@@ -197,18 +209,18 @@ return typeof({Class});
 
         private string GenerateMethod(DispatcherMap definition)
         {
-            string attributes = GenerateAttributes(definition.AuthorizeAttributes);
+            var attributes = GenerateAttributes(definition.AuthorizeAttributes);
 
-            string method = definition.Key.ResponseType == typeof(void)
+            var method = definition.Key.ResponseType == typeof(void)
                 ? Code.MethodCommandHandlerCode
                 : Code.MethodHandlerCode;
 
             return method
                 .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
                 .Replace(Tag.Method, definition.Key.MethodName, StringComparison.Ordinal)
-                .Replace(Tag.Request, definition.Key.RequestType.Name, StringComparison.Ordinal)
-                .Replace(Tag.Response, definition.Key.ResponseType.Name, StringComparison.Ordinal)
-                .Replace(Tag.Handler, definition.HandlerType.Name, StringComparison.Ordinal);
+                .Replace(Tag.Request, GetNestedClassName(definition.Key.RequestType), StringComparison.Ordinal)
+                .Replace(Tag.Response, GetNestedClassName(definition.Key.ResponseType), StringComparison.Ordinal)
+                .Replace(Tag.Handler, GetNestedClassName(definition.HandlerType), StringComparison.Ordinal);
         }
 
         private static string GenerateAttributes(IReadOnlyCollection<AuthorizeAttribute> authorizeAttributes)
@@ -221,7 +233,7 @@ return typeof({Class});
 
         private static string GenerateAttributeProperties(AuthorizeAttribute attribute)
         {
-            List<string> properties = new List<string>(3);
+            var properties = new List<string>(3);
 
             if (attribute.Roles != null)
                 properties.Add(Code.RolesPropertyCode.Replace(Tag.Roles, attribute.Roles, StringComparison.Ordinal));
@@ -265,13 +277,14 @@ return typeof({Class});
                 if (returnTaskType.GetGenericTypeDefinition() != typeof(Task<>))
                     continue;
 
-                string methodName = method.Name;
-                Type parameterType = parameters[0].ParameterType;
+                var methodName = method.Name;
+                var parameterType = parameters[0].ParameterType;
                 var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
                 var handlerMap = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
                 if (handlerMap == null)
                 {
+                    // TODO: collect all errors and throw once with all messages.
                     if (returnType != typeof(void))
                         throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
                     else

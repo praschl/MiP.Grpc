@@ -1,5 +1,4 @@
-﻿
-using Protobuf = Google.Protobuf.WellKnownTypes;
+﻿using Protobuf = Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
 using System;
