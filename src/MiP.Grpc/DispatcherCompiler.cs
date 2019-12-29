@@ -8,12 +8,16 @@ using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Proto = Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
+using MiP.Grpc.Internal;
 
 namespace MiP.Grpc
 {
     // TODO: code generation is pretty big by now. improve it by using StringBuilder.
     internal class DispatcherCompiler
     {
+        private const string Base = "Base";
+        private const string Dispatcher = "Dispatcher";
+
         private static class Tag
         {
             public const string Class = "{Class}";
@@ -33,15 +37,14 @@ namespace MiP.Grpc
             public const string AttributeProperties = "{AttributeProperties}";
         }
 
-        private const string Base = "Base";
-        private const string Dispatcher = "Dispatcher";
-
-        public const string ClassCode = @"{Attributes}
+        private static class Code
+        {
+            public const string ClassCode = @"{Attributes}
 public class {Class} : {BaseClass}
 {{Members}}
 ";
 
-        public const string ConstructorCode = @"
+            public const string ConstructorCode = @"
     private readonly IDispatcher _dispatcher;
     public {Constructor}(IDispatcher dispatcher)
     {
@@ -49,33 +52,31 @@ public class {Class} : {BaseClass}
     }
 ";
 
-        public const string MethodHandlerCode = @"{Attributes}
+            public const string MethodHandlerCode = @"{Attributes}
     public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
         return await _dispatcher.Dispatch<{Request}, {Response}, {Handler}>(request, context);
     }
 ";
 
-        public const string MethodCommandHandlerCode = @"{Attributes}
+            public const string MethodCommandHandlerCode = @"{Attributes}
     public async override Task<Empty> {Method}({Request} request, ServerCallContext context)
     {
-        await _dispatcher.Dispatch<{Request}, Empty, {Handler}>(request, context);
-        return new Empty();
+        return await _dispatcher.Dispatch<{Request}, Empty, CommandHandlerAdapter<{Request}, {Handler}>>(request, context);
     }
 ";
 
-        public const string ReturnTypeCode = @"
+            public const string ReturnTypeCode = @"
 return typeof({Class});
 ";
 
-        public const string AuthorizeAttributeCode = @"
+            public const string AuthorizeAttributeCode = @"
     [Authorize({AttributeProperties})]";
 
-        public const string PolicyPropertyCode = @"Policy = ""{Policy}""";
-        public const string RolesPropertyCode = @"Roles = ""{Roles}""";
-        public const string AuthenticationSchemesPropertyCode = @"AuthenticationSchemes = ""{AuthenticationSchemes}""";
-
-        public const string HandlerTypeFormat = "IHandler<{Request}, {Response}>";
+            public const string PolicyPropertyCode = @"Policy = ""{Policy}""";
+            public const string RolesPropertyCode = @"Roles = ""{Roles}""";
+            public const string AuthenticationSchemesPropertyCode = @"AuthenticationSchemes = ""{AuthenticationSchemes}""";
+        }
 
         private readonly IHandlerStore _handlerStore;
         private readonly MapGrpcServiceConfiguration _configuration;
@@ -113,6 +114,7 @@ return typeof({Class});
                     typeof(IDispatcher),
                     typeof(IHandler<,>),
                     typeof(ICommandHandler<>),
+                    typeof(CommandHandlerAdapter<,>),
                     typeof(ServerCallContext),
                     typeof(AuthorizeAttribute),
                     typeof(Proto.Empty)
@@ -154,7 +156,7 @@ return typeof({Class});
             var source = GenerateSource(handlerMaps, className, baseClassName);
 
             // add a line which returns the Type of that class from the script.
-            source += ReturnTypeCode.Replace(Tag.Class, className, StringComparison.Ordinal);
+            source += Code.ReturnTypeCode.Replace(Tag.Class, className, StringComparison.Ordinal);
 
             var usedTypes = handlerMaps.SelectMany(x => new[] { x.HandlerType, x.Key.RequestType, x.Key.ResponseType })
                 .Concat(new[] { serviceBaseType })
@@ -179,12 +181,12 @@ return typeof({Class});
         {
             string attributes = GenerateAttributes(_configuration.GlobalAuthorizeAttributes);
 
-            var members = ConstructorCode
+            var members = Code.ConstructorCode
                 .Replace(Tag.Constructor, className, StringComparison.Ordinal)
                 +
                 string.Concat(handlerMaps.Select(GenerateMethod));
 
-            var classSource = ClassCode
+            var classSource = Code.ClassCode
                 .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
                 .Replace(Tag.Class, className, StringComparison.Ordinal)
                 .Replace(Tag.BaseClass, baseClassName, StringComparison.Ordinal)
@@ -198,8 +200,8 @@ return typeof({Class});
             string attributes = GenerateAttributes(definition.AuthorizeAttributes);
 
             string method = definition.Key.ResponseType == typeof(void)
-                ? MethodCommandHandlerCode
-                : MethodHandlerCode;
+                ? Code.MethodCommandHandlerCode
+                : Code.MethodHandlerCode;
 
             return method
                 .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
@@ -211,7 +213,7 @@ return typeof({Class});
 
         private static string GenerateAttributes(IReadOnlyCollection<AuthorizeAttribute> authorizeAttributes)
         {
-            var lines = authorizeAttributes.Select(a => AuthorizeAttributeCode
+            var lines = authorizeAttributes.Select(a => Code.AuthorizeAttributeCode
                 .Replace(Tag.AttributeProperties, GenerateAttributeProperties(a), StringComparison.Ordinal));
 
             return string.Concat(lines);
@@ -222,13 +224,13 @@ return typeof({Class});
             List<string> properties = new List<string>(3);
 
             if (attribute.Roles != null)
-                properties.Add(RolesPropertyCode.Replace(Tag.Roles, attribute.Roles, StringComparison.Ordinal));
+                properties.Add(Code.RolesPropertyCode.Replace(Tag.Roles, attribute.Roles, StringComparison.Ordinal));
 
             if (attribute.Policy != null)
-                properties.Add(PolicyPropertyCode.Replace(Tag.Policy, attribute.Policy, StringComparison.Ordinal));
+                properties.Add(Code.PolicyPropertyCode.Replace(Tag.Policy, attribute.Policy, StringComparison.Ordinal));
 
             if (attribute.AuthenticationSchemes != null)
-                properties.Add(AuthenticationSchemesPropertyCode.Replace(Tag.AuthenticationSchemes, attribute.AuthenticationSchemes, StringComparison.Ordinal));
+                properties.Add(Code.AuthenticationSchemesPropertyCode.Replace(Tag.AuthenticationSchemes, attribute.AuthenticationSchemes, StringComparison.Ordinal));
 
             return string.Join(", ", properties);
         }

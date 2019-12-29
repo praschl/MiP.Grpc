@@ -24,6 +24,7 @@ namespace MiP.Grpc
         /// <param name="context">The <see cref="ServerCallContext"/> parameter from the service method being handled.</param>
         /// <param name="methodName">The actual name of the method being handled. Currently this parameter is not used by the default implementation, but may be useful for custom implementations.</param>
         /// <returns>A <see cref="Task"/> that once completed will contain the result of the method.</returns>
-        Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context, [CallerMemberName] string methodName = null);
+        Task<TResponse> Dispatch<TRequest, TResponse, THandler>(TRequest request, ServerCallContext context, [CallerMemberName] string methodName = null)
+            where THandler : IHandler<TRequest, TResponse>;
     }
 }
