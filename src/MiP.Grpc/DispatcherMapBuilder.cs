@@ -1,4 +1,5 @@
-﻿using Grpc.Core;
+﻿using Protobuf = Google.Protobuf.WellKnownTypes;
+using Grpc.Core;
 using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Collections.Generic;
@@ -42,6 +43,10 @@ namespace MiP.Grpc
         {
             _dispatcherMaps.TryGetValue(new DispatcherMapKey(methodName, parameterType, returnType), out var map);
 
+            // try to map to an ICommandHandler<T>
+            if (map == null && returnType == typeof(Protobuf.Empty))
+                _dispatcherMaps.TryGetValue(new DispatcherMapKey(methodName, parameterType, typeof(void)), out map);
+
             return map;
         }
 
@@ -83,7 +88,7 @@ namespace MiP.Grpc
                 }
 
                 var method = implementation.GetMethod(
-                    nameof(IHandler<object, object>.RunAsync), 
+                    nameof(IHandler<object, object>.RunAsync),
                     new[] { args.RequestType, typeof(ServerCallContext) });
 
                 if (method == null)
@@ -102,7 +107,7 @@ namespace MiP.Grpc
             var handlerInfo = GetIHandlers(handlerType);
 
             if (handlerInfo.ServiceArgs.Count == 0)
-                throw new InvalidOperationException($"Type [{handlerType.FullName}] has no implementation of [{typeof(IHandler<,>).FullName}].");
+                throw new InvalidOperationException($"Type [{handlerType.FullName}] has no implementation of [{typeof(IHandler<,>).FullName}] or [{typeof(ICommandHandler<>).FullName}].");
 
             Add(handlerInfo, name);
         }
@@ -111,16 +116,27 @@ namespace MiP.Grpc
         {
             var interfaces = type.GetInterfaces();
 
-            var services = interfaces.Where(i =>
+            var ihandlers = interfaces.Where(i =>
                 i.IsGenericType &&
                 i.GetGenericTypeDefinition() == typeof(IHandler<,>)
-                );
-
-            var serviceTypes = services.Select(s =>
+            )
+            .Select(s =>
             {
                 var typeArgs = s.GetGenericArguments();
                 return new HandlerArgs(typeArgs[0], typeArgs[1]);
-            }).ToArray();
+            });
+
+            var icommands = interfaces.Where(i =>
+                i.IsGenericType &&
+                i.GetGenericTypeDefinition() == typeof(ICommandHandler<>)
+            )
+            .Select(s =>
+            {
+                var typeArgs = s.GetGenericArguments();
+                return new HandlerArgs(typeArgs[0], typeof(void));
+            });
+
+            var serviceTypes = ihandlers.Concat(icommands).ToArray();
 
             return new HandlerInfo(type, serviceTypes);
         }

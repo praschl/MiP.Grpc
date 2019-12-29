@@ -49,10 +49,18 @@ public class {Class} : {BaseClass}
     }
 ";
 
-        public const string MethodCode = @"{Attributes}
+        public const string MethodHandlerCode = @"{Attributes}
     public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
     {
         return await _dispatcher.Dispatch<{Request}, {Response}, {Handler}>(request, context);
+    }
+";
+
+        public const string MethodCommandHandlerCode = @"{Attributes}
+    public async override Task<Empty> {Method}({Request} request, ServerCallContext context)
+    {
+        await _dispatcher.Dispatch<{Request}, Empty, {Handler}>(request, context);
+        return new Empty();
     }
 ";
 
@@ -102,7 +110,9 @@ return typeof({Class});
                 {
                     typeof(IServiceProvider),
                     typeof(Task<>),
+                    typeof(IDispatcher),
                     typeof(IHandler<,>),
+                    typeof(ICommandHandler<>),
                     typeof(ServerCallContext),
                     typeof(AuthorizeAttribute),
                     typeof(Proto.Empty)
@@ -187,7 +197,11 @@ return typeof({Class});
         {
             string attributes = GenerateAttributes(definition.AuthorizeAttributes);
 
-            return MethodCode
+            string method = definition.Key.ResponseType == typeof(void)
+                ? MethodCommandHandlerCode
+                : MethodHandlerCode;
+
+            return method
                 .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
                 .Replace(Tag.Method, definition.Key.MethodName, StringComparison.Ordinal)
                 .Replace(Tag.Request, definition.Key.RequestType.Name, StringComparison.Ordinal)
@@ -253,11 +267,16 @@ return typeof({Class});
                 Type parameterType = parameters[0].ParameterType;
                 var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
-                var handlerType = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
-                if (handlerType == null)
-                    throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
+                var handlerMap = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
+                if (handlerMap == null)
+                {
+                    if (returnType != typeof(void))
+                        throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
+                    else
+                        throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] or [ICommandHandler<{parameterType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
+                }
 
-                yield return handlerType;
+                yield return handlerMap;
             }
         }
     }

@@ -24,12 +24,21 @@ namespace MiP.Grpc
             // check class name
             string name = Implementation.Name;
 
-            string interfaceNameWithoutPrefix = nameof(IHandler<object, object>).Substring(1);
+            // remove "CommandHandler" from end
+            name = TrimEnd(name, nameof(ICommandHandler<object>).Substring(1));
 
-            if (name.EndsWith(interfaceNameWithoutPrefix, StringComparison.Ordinal))
-                name = name.Substring(0, name.Length - interfaceNameWithoutPrefix.Length);
+            // remove "Handler" from end
+            name = TrimEnd(name, nameof(IHandler<object, object>).Substring(1));
 
             return name;
+        }
+
+        private static string TrimEnd(string from, string trim)
+        {
+            if (from.EndsWith(trim, StringComparison.Ordinal))
+                return from.Substring(0, from.Length - trim.Length);
+
+            return from;
         }
     }
 }

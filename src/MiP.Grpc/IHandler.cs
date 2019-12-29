@@ -13,8 +13,8 @@ namespace MiP.Grpc
         /// <summary>
         /// Runs the command or query, passes the <paramref name="request"/> and <paramref name="context"/> and returns the result of the method.
         /// </summary>
-        /// <param name="request"></param>
-        /// <param name="context"></param>
+        /// <param name="request">The request parameter.</param>
+        /// <param name="context">The <see cref="ServerCallContext"/>.</param>
         /// <returns>A <see cref="Task"/> that will contain the result of the handler.</returns>
         Task<TResponse> RunAsync(TRequest request, ServerCallContext context);
     }
