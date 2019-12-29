@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MiP.Grpc;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,7 +18,10 @@ namespace MiP.Gprc.Test
     public class DispatcherCompilerTest
     {
         private ServerCallContext _callContext;
+        private AuthorizeAttribute[] _methodOneAttributes;
+        private AuthorizeAttribute[] _methodTwoAttributes;
         private IHandlerStore _handler;
+        private IDispatcher _dispatcher;
         private MapGrpcServiceConfiguration _config;
         private DispatcherCompiler _compiler;
 
@@ -29,7 +33,22 @@ namespace MiP.Gprc.Test
             _callContext = TestServerCallContext.Create(_guid.ToString(),
                 null, DateTime.Now, null, CancellationToken.None, null, null, null, null, null, null);
 
+            _methodOneAttributes = new[]
+            {
+                new AuthorizeAttribute("my.policy.1") { Roles = "my.role.1", AuthenticationSchemes = "my.scheme.1" },
+                new AuthorizeAttribute("my.policy.2") { Roles = "my.role.2", AuthenticationSchemes = "my.scheme.2" },
+            };
+
+            _methodTwoAttributes = new[]
+            {
+                new AuthorizeAttribute("my.policy.3") { Roles = "my.role.3", AuthenticationSchemes = "my.scheme.3" },
+                new AuthorizeAttribute("my.policy.4") { Roles = "my.role.4", AuthenticationSchemes = "my.scheme.4" },
+            };
+
+
             _handler = A.Fake<IHandlerStore>();
+            _dispatcher = A.Fake<IDispatcher>();
+
             _config = new MapGrpcServiceConfiguration();
 
             _compiler = new DispatcherCompiler(_handler, _config);
@@ -72,10 +91,8 @@ namespace MiP.Gprc.Test
         public void Adds_methods_for_IHandler()
         {
             // arrange
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.One), typeof(string), typeof(int)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.One), typeof(string), typeof(int)), typeof(StringIntHandler), new AuthorizeAttribute[0]));
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.Two), typeof(int), typeof(string)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.Two), typeof(int), typeof(string)), typeof(IntStringHandler), new AuthorizeAttribute[0]));
+            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), null, 0);
+            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 0, null);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(TwoHandlers));
@@ -89,19 +106,11 @@ namespace MiP.Gprc.Test
         public async Task Execution_of_methods_for_IHandler()
         {
             // arrange
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.One), typeof(string), typeof(int)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.One), typeof(string), typeof(int)), typeof(StringIntHandler), new AuthorizeAttribute[0]));
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.Two), typeof(int), typeof(string)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.Two), typeof(int), typeof(string)), typeof(IntStringHandler), new AuthorizeAttribute[0]));
-
-            var dispatcher = A.Fake<IDispatcher>();
-            A.CallTo(() => dispatcher.Dispatch<string, int, StringIntHandler>("request one", _callContext, "One"))
-                .Returns(Task.FromResult(14));
-            A.CallTo(() => dispatcher.Dispatch<int, string, IntStringHandler>(2, _callContext, "Two"))
-                .Returns(Task.FromResult("response two"));
+            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), "request one", 14);
+            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 2, "response two");
 
             var compiledType = _compiler.CompileDispatcher(typeof(TwoHandlers));
-            var result = Activator.CreateInstance(compiledType, dispatcher) as TwoHandlers;
+            var result = Activator.CreateInstance(compiledType, _dispatcher) as TwoHandlers;
 
             // act
             var executionResult1 = await result.One("request one", _callContext);
@@ -116,10 +125,8 @@ namespace MiP.Gprc.Test
         public void Adds_methods_for_IHandler_with_Empty()
         {
             // arrange
-            A.CallTo(() => _handler.FindHandlerMap(nameof(EmptyHandlers.One), typeof(Protobuf.Empty), typeof(Protobuf.Empty)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(EmptyHandlers.One), typeof(Protobuf.Empty), typeof(Protobuf.Empty)), typeof(EmptyOneHandler), new AuthorizeAttribute[0]));
-            A.CallTo(() => _handler.FindHandlerMap(nameof(EmptyHandlers.Two), typeof(Protobuf.Empty), typeof(Protobuf.Empty)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(EmptyHandlers.Two), typeof(Protobuf.Empty), typeof(Protobuf.Empty)), typeof(EmptyTwoHandler), new AuthorizeAttribute[0]));
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(nameof(EmptyHandlers.One), null, null);
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(nameof(EmptyHandlers.Two), null, null);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(EmptyHandlers));
@@ -133,19 +140,11 @@ namespace MiP.Gprc.Test
         public async Task Execution_of_methods_for_IHandler_with_Empty()
         {
             // arrange
-            A.CallTo(() => _handler.FindHandlerMap(nameof(EmptyHandlers.One), typeof(Protobuf.Empty), typeof(Protobuf.Empty)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(EmptyHandlers.One), typeof(Protobuf.Empty), typeof(Protobuf.Empty)), typeof(EmptyOneHandler), new AuthorizeAttribute[0]));
-            A.CallTo(() => _handler.FindHandlerMap(nameof(EmptyHandlers.Two), typeof(Protobuf.Empty), typeof(Protobuf.Empty)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(EmptyHandlers.Two), typeof(Protobuf.Empty), typeof(Protobuf.Empty)), typeof(EmptyTwoHandler), new AuthorizeAttribute[0]));
-
-            var dispatcher = A.Fake<IDispatcher>();
-            A.CallTo(() => dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(new Protobuf.Empty(), _callContext, "One"))
-                .Returns(Task.FromResult(new Protobuf.Empty()));
-            A.CallTo(() => dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(new Protobuf.Empty(), _callContext, "Two"))
-                .Returns(Task.FromResult(new Protobuf.Empty()));
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(nameof(EmptyHandlers.One), new Protobuf.Empty(), new Protobuf.Empty());
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(nameof(EmptyHandlers.Two), new Protobuf.Empty(), new Protobuf.Empty());
 
             var compiledType = _compiler.CompileDispatcher(typeof(EmptyHandlers));
-            var result = Activator.CreateInstance(compiledType, dispatcher) as EmptyHandlers;
+            var result = Activator.CreateInstance(compiledType, _dispatcher) as EmptyHandlers;
 
             // act
             var executionResult1 = await result.One(new Protobuf.Empty(), _callContext);
@@ -155,43 +154,40 @@ namespace MiP.Gprc.Test
             executionResult1.Should().Be(new Protobuf.Empty());
             executionResult2.Should().Be(new Protobuf.Empty());
 
-            A.CallTo(() => dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(new Protobuf.Empty(), _callContext, "One"))
+            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(new Protobuf.Empty(), _callContext, "One"))
                 .MustHaveHappenedOnceExactly();
-            A.CallTo(() => dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(new Protobuf.Empty(), _callContext, "Two"))
+            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(new Protobuf.Empty(), _callContext, "Two"))
                 .MustHaveHappenedOnceExactly();
         }
 
         [TestMethod]
         public void Adds_AuthorizeAttribute_to_IHandler_methods()
         {
-            // expected
-            var methodOneAttributes = new[]
-            {
-                new AuthorizeAttribute("my.policy.1") { Roles = "my.role.1", AuthenticationSchemes = "my.scheme.1" },
-                new AuthorizeAttribute("my.policy.2") { Roles = "my.role.2", AuthenticationSchemes = "my.scheme.2" },
-            };
-
-            var methodTwoAttributes = new[]
-            {
-                new AuthorizeAttribute("my.policy.3") { Roles = "my.role.3", AuthenticationSchemes = "my.scheme.3" },
-                new AuthorizeAttribute("my.policy.4") { Roles = "my.role.4", AuthenticationSchemes = "my.scheme.4" },
-            };
-
             // arrange
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.One), typeof(string), typeof(int)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.One), typeof(string), typeof(int)), typeof(StringIntHandler), methodOneAttributes));
-            A.CallTo(() => _handler.FindHandlerMap(nameof(TwoHandlers.Two), typeof(int), typeof(string)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(nameof(TwoHandlers.Two), typeof(int), typeof(string)), typeof(IntStringHandler), methodTwoAttributes));
+            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), null, 0, _methodOneAttributes);
+            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 0, null, _methodTwoAttributes);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(TwoHandlers));
 
             // assert
-            result.GetMethod(nameof(TwoHandlers.One)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(methodOneAttributes);
-            result.GetMethod(nameof(TwoHandlers.Two)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(methodTwoAttributes);
+            result.GetMethod(nameof(TwoHandlers.One)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(_methodOneAttributes);
+            result.GetMethod(nameof(TwoHandlers.Two)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(_methodTwoAttributes);
         }
 
         // TODO: same tests for ICommandHandler
+
+        private void FakeHandler<TRequest, TResponse, THandler>(string methodName, TRequest request, TResponse response, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
+            where THandler : IHandler<TRequest, TResponse>
+        {
+            attributes ??= new AuthorizeAttribute[0];
+
+            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TRequest), typeof(TResponse)))
+                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TRequest), typeof(TResponse)), typeof(THandler), attributes));
+
+            A.CallTo(() => _dispatcher.Dispatch<TRequest, TResponse, THandler>(request, _callContext, methodName))
+            .Returns(Task.FromResult(response));
+        }
 
         public class EmptyBase { }
 
