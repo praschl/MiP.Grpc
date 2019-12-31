@@ -80,13 +80,6 @@ namespace MiP.Grpc
             {
                 Type implementation = handlerInfo.Implementation;
 
-                var key = new DispatcherMapKey(name, args.RequestType, args.ResponseType);
-                if (_dispatcherMaps.ContainsKey(key))
-                {
-                    Debug.WriteLine($"There is already a handler for method [{Format.Method(name, args.RequestType, args.ResponseType)}]. It will be removed and [{implementation.FullName}] will handle that.");
-                    _dispatcherMaps.Remove(key);
-                }
-
                 var method = implementation.GetMethod(
                     nameof(IHandler<object, object>.RunAsync),
                     new[] { args.RequestType, typeof(ServerCallContext) });
@@ -94,10 +87,20 @@ namespace MiP.Grpc
                 if (method == null)
                     throw new InvalidOperationException($"Could not find expected method [{Format.Method(name, args.RequestType, args.ResponseType)}]");
 
-                // add the AuthorizeAttributes from the method, the class could implement more than just one IHandler<,>
-                var methodAttributes = method.GetCustomAttributes<AuthorizeAttribute>();
+                // get the attributes from the method, the class could implement more than just one IHandler<,>
+                var methodAuthorizeAttributes = method.GetCustomAttributes<AuthorizeAttribute>();
+                var methodHandlesAttribute = method.GetCustomAttribute<HandlesAttribute>();
+                
+                var methodName = methodHandlesAttribute?.MethodName ?? name;
 
-                var newMap = new DispatcherMap(key, implementation, classAttributes.Concat(methodAttributes).ToArray());
+                var key = new DispatcherMapKey(methodName, args.RequestType, args.ResponseType);
+                if (_dispatcherMaps.ContainsKey(key))
+                {
+                    Debug.WriteLine($"There is already a handler for method [{Format.Method(methodName, args.RequestType, args.ResponseType)}]. It will be removed and [{implementation.FullName}] will handle that.");
+                    _dispatcherMaps.Remove(key);
+                }
+
+                var newMap = new DispatcherMap(key, implementation, classAttributes.Concat(methodAuthorizeAttributes).ToArray());
                 _dispatcherMaps.Add(key, newMap);
             }
         }

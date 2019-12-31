@@ -5,7 +5,7 @@ namespace MiP.Grpc
     /// <summary>
     /// Used on a class to set the name of the service method that is handled by the class.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false, Inherited = false)]
     public class HandlesAttribute : Attribute
     {
         /// <summary>

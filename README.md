@@ -92,7 +92,7 @@ services.AddDispatchedGrpcHandlers(builder =>
 ```
 The method will scan for types implementing `IHandler<TRequest, TResponse>` and register them with a transient lifetime.
 
-Per convention, a found implementation thats called "SayHelloHandler" will handle the "SayHello" method. However you can handle a method with another name, if you add the `HandlesAttribute` to the class:
+Per convention, a found implementation thats called "SayHelloHandler" will handle the "SayHello" method. However you can handle a method with another name, if you attach the `HandlesAttribute` to the class
 ```csharp
 [Handles("SayHello")] // class will handle the "SayHello" method regardless of its name.
 public class CanHandleSay : IHandler<CanHandleSomeRequest, CanHandleSomeResponse>
@@ -100,10 +100,29 @@ public class CanHandleSay : IHandler<CanHandleSomeRequest, CanHandleSomeResponse
   // ...
 }
 ```
+or to the method, which is more useful when having a class with multiple implementations of `IHandler<TRequest, TResponse>` or `ICommandHandler<TRequest>`
+```csharp
+public class CanHandleSay : IHandler<HelloRequest, HelloResponse>, IHandler<HowdyRequest, HowdyResponse>
+{
+  [Handles("SayHello")]
+  public Task<HelloResponse> RunAsync(HelloRequest request, ServerCallContext context)
+  { //...
+  }
+  
+  [Handles("SayHowdy")]
+  public Task<HowdyResponse> RunAsync(HowdyRequest request, ServerCallContext context)
+  { //...
+  }
+
+  // can also add handler methods for ICommandHandler<TCommand>
+}
+```
+
 Priority of finding the name is
-1. `HandlesAttribute`s MethodName property
-2. Name of class without "Handler"
-3. Name of class
+1. `HandlesAttribute`s on method, MethodName property
+2. `HandlesAttribute`s on class, MethodName property
+3. Name of class without "Handler"
+4. Name of class
 
 #### Add types manually
 ```csharp
@@ -116,9 +135,10 @@ services.AddDispatchedGrpcHandlers(builder =>
 ```
 Passing the name is optional, priorities for chosing the name are
 1. name Parameter
-2. `HandlesAttribute`s MethodName property
-3. Name of class without "Handler"
-4. Name of class
+2. `HandlesAttribute`s on method, MethodName property
+3. `HandlesAttribute`s on class, MethodName property
+4. Name of class without "Handler"
+5. Name of class
 
 And you can also combine them in any order:
 ```csharp

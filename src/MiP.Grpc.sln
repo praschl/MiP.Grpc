@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiP.Gprc.Test", "MiP.Gprc.T
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mip.Grpc.Example", "Mip.Grpc.Example\Mip.Grpc.Example.csproj", "{3799FE43-A65C-4BDA-A484-1CAA167DE145}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiP.Grpc.Example.Client", "MiP.Grpc.Example.Client\MiP.Grpc.Example.Client.csproj", "{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiP.Grpc.Example.Client", "MiP.Grpc.Example.Client\MiP.Grpc.Example.Client.csproj", "{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiP.Gprc.Test.Assembly", "MiP.Gprc.Test.Assembly\MiP.Gprc.Test.Assembly.csproj", "{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

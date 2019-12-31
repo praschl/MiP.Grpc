@@ -21,6 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\MiP.Gprc.Test.Assembly\MiP.Gprc.Test.Assembly.csproj" />
     <ProjectReference Include="..\MiP.Grpc\MiP.Grpc.csproj" />
   </ItemGroup>
 
