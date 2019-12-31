@@ -15,8 +15,10 @@ using Protobuf = Google.Protobuf.WellKnownTypes;
 namespace MiP.Gprc.Test
 {
     [TestClass]
-    public class DispatcherCompilerTest
+    public class DispatcherCompiler_Handlers_Test
     {
+        private Guid _guid = Guid.NewGuid();
+
         private ServerCallContext _callContext;
         private AuthorizeAttribute[] _methodOneAttributes;
         private AuthorizeAttribute[] _methodTwoAttributes;
@@ -24,8 +26,6 @@ namespace MiP.Gprc.Test
         private IDispatcher _dispatcher;
         private MapGrpcServiceConfiguration _config;
         private DispatcherCompiler _compiler;
-
-        private Guid _guid = Guid.NewGuid();
 
         [TestInitialize]
         public void Initialize()
@@ -45,46 +45,12 @@ namespace MiP.Gprc.Test
                 new AuthorizeAttribute("my.policy.4") { Roles = "my.role.4", AuthenticationSchemes = "my.scheme.4" },
             };
 
-
             _handler = A.Fake<IHandlerStore>();
             _dispatcher = A.Fake<IDispatcher>();
 
             _config = new MapGrpcServiceConfiguration();
 
             _compiler = new DispatcherCompiler(_handler, _config);
-        }
-
-        [TestMethod]
-        public void Compiles_class_with_constructor()
-        {
-            // act
-            var result = _compiler.CompileDispatcher(typeof(EmptyBase));
-
-            // assert
-            result.Should().NotBeNull();
-            result.Should().HaveConstructor(new[] { typeof(IDispatcher) });
-        }
-
-        [TestMethod]
-        public void Adds_AuthorizeAttributes_to_class()
-        {
-            // arrange
-            _config.AddGlobalAuthorizeAttribute("my.policy.1", "my.roles.1", "my.scheme.1");
-            _config.AddGlobalAuthorizeAttribute("my.policy.2", "my.roles.2", "my.scheme.2");
-
-            // expected
-            var authorize1 = new AuthorizeAttribute("my.policy.1") { Roles = "my.roles.1", AuthenticationSchemes = "my.scheme.1" };
-            var authorize2 = new AuthorizeAttribute("my.policy.2") { Roles = "my.roles.2", AuthenticationSchemes = "my.scheme.2" };
-
-            // act
-            var result = _compiler.CompileDispatcher(typeof(EmptyBase));
-
-            // assert
-            var attributes = result.GetCustomAttributes<AuthorizeAttribute>();
-            attributes.Should().BeEquivalentTo(new[] { authorize1, authorize2 });
-
-            result.Should().NotBe<EmptyBase>();
-            result.Should().BeAssignableTo<EmptyBase>();
         }
 
         [TestMethod]
@@ -113,8 +79,8 @@ namespace MiP.Gprc.Test
             var result = Activator.CreateInstance(compiledType, _dispatcher) as TwoHandlers;
 
             // act
-            var executionResult1 = await result.One("request one", _callContext);
-            var executionResult2 = await result.Two(2, _callContext);
+            var executionResult1 = await result.One("request one", _callContext).ConfigureAwait(false);
+            var executionResult2 = await result.Two(2, _callContext).ConfigureAwait(false);
 
             // assert
             executionResult1.Should().Be(14);
@@ -147,8 +113,8 @@ namespace MiP.Gprc.Test
             var result = Activator.CreateInstance(compiledType, _dispatcher) as EmptyHandlers;
 
             // act
-            var executionResult1 = await result.One(new Protobuf.Empty(), _callContext);
-            var executionResult2 = await result.Two(new Protobuf.Empty(), _callContext);
+            var executionResult1 = await result.One(new Protobuf.Empty(), _callContext).ConfigureAwait(false);
+            var executionResult2 = await result.Two(new Protobuf.Empty(), _callContext).ConfigureAwait(false);
 
             // assert
             executionResult1.Should().Be(new Protobuf.Empty());
@@ -175,8 +141,6 @@ namespace MiP.Gprc.Test
             result.GetMethod(nameof(TwoHandlers.Two)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(_methodTwoAttributes);
         }
 
-        // TODO: same tests for ICommandHandler
-
         private void FakeHandler<TRequest, TResponse, THandler>(string methodName, TRequest request, TResponse response, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
             where THandler : IHandler<TRequest, TResponse>
         {
@@ -188,8 +152,6 @@ namespace MiP.Gprc.Test
             A.CallTo(() => _dispatcher.Dispatch<TRequest, TResponse, THandler>(request, _callContext, methodName))
             .Returns(Task.FromResult(response));
         }
-
-        public class EmptyBase { }
 
         public class TwoHandlers
         {
@@ -208,7 +170,7 @@ namespace MiP.Gprc.Test
         {
             public Task<int> RunAsync(string request, ServerCallContext context)
             {
-                throw new NotImplementedException();
+                return Task.FromResult(0);
             }
         }
 
@@ -216,7 +178,7 @@ namespace MiP.Gprc.Test
         {
             public Task<string> RunAsync(int request, ServerCallContext context)
             {
-                throw new NotImplementedException();
+                return Task.FromResult(string.Empty);
             }
         }
 
@@ -237,7 +199,7 @@ namespace MiP.Gprc.Test
         {
             public Task<Protobuf.Empty> RunAsync(Protobuf.Empty request, ServerCallContext context)
             {
-                throw new NotImplementedException();
+                return Task.FromResult(new Protobuf.Empty());
             }
         }
 
@@ -245,7 +207,7 @@ namespace MiP.Gprc.Test
         {
             public Task<Protobuf.Empty> RunAsync(Protobuf.Empty request, ServerCallContext context)
             {
-                throw new NotImplementedException();
+                return Task.FromResult(new Protobuf.Empty());
             }
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Grpc.Core;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Protobuf = Google.Protobuf.WellKnownTypes;
 

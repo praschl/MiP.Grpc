@@ -9,11 +9,9 @@ using Microsoft.CodeAnalysis.Scripting;
 using Proto = Google.Protobuf.WellKnownTypes;
 using Microsoft.AspNetCore.Authorization;
 using MiP.Grpc.Internal;
-using System.Diagnostics;
 
 namespace MiP.Grpc
 {
-    // TODO: code generation is pretty big by now. improve it by using StringBuilder.
     internal class DispatcherCompiler
     {
         private const string Base = "Base";
@@ -284,7 +282,6 @@ return typeof({Class});
                 var handlerMap = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
                 if (handlerMap == null)
                 {
-                    // TODO: collect all errors and throw once with all messages.
                     if (returnType != typeof(void))
                         throw new InvalidOperationException($"Couldn't find a type that implements [IHandler<{parameterType.Name}, {returnType.Name}>] to handle method [{Format.Method(methodName, parameterType, returnType)}]");
                     else
