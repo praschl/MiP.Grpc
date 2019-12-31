@@ -20,6 +20,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="..\Mip.Grpc.Example\Protos\calculator.proto" GrpcServices="Client">
+      <Link>Protos\calculator.proto</Link>
+    </Protobuf>
     <Protobuf Include="..\Mip.Grpc.Example\Protos\greet.proto" GrpcServices="Client">
       <Link>Protos\greet.proto</Link>
     </Protobuf>

@@ -1,6 +1,7 @@
 ﻿using Google.Protobuf.WellKnownTypes;
 using Grpc.Net.Client;
 using Mip.Grpc.Example;
+using Mip.Grpc.Example.Calc;
 using System;
 using System.Threading.Tasks;
 
@@ -16,6 +17,8 @@ namespace MiP.Grpc.Example.Client
 
                 var channel = GrpcChannel.ForAddress("https://localhost:5001");
                 var client = new Greeter.GreeterClient(channel);
+
+                var calc = new Calculator.CalculatorClient(channel);
 
                 var result1 = await client.SayHelloAsync(new HelloRequest
                 {
@@ -65,6 +68,10 @@ namespace MiP.Grpc.Example.Client
 
                 await client.SayTwoAsync(new Empty());
                 Console.WriteLine("Two said");
+                await Task.Delay(200);
+
+                var calcResult = await calc.AddAsync(new AddRequest { A = 2, B = 3 });
+                Console.WriteLine("Added: " + calcResult.Res);
                 await Task.Delay(200);
             }
             catch (Exception ex)

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Mip.Grpc.Example.Calc;
 
 namespace Mip.Grpc.Example
 {
@@ -46,6 +47,8 @@ namespace Mip.Grpc.Example
                 });
                 // this will compile a class deriving from Greeter.GreeterBase
                 // overriding its methods so that they get forwarded to implementations of IHandler<TRequest, TResponse> or ICommandHandler<TCommand>
+
+                endpoints.CompileAndMapGrpcServiceDispatcher<Calculator.CalculatorBase>(app.ApplicationServices);
 
                 endpoints.MapGet("/", async context =>
                 {
