@@ -16,7 +16,7 @@ service Greeter {
   rpc SayRandom (google.protobuf.Empty) returns (google.protobuf.Empty);
 
   // commands
-  rpc SayOne (OneRequest) returns (google.protobuf.Empty);
+  rpc SayOne (OneCommand) returns (google.protobuf.Empty);
   rpc SayTwo (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
@@ -38,6 +38,6 @@ message HowdyReply {
     int32 number = 2;
 }
 
-message OneRequest {
+message OneCommand {
     string one = 1;
 }

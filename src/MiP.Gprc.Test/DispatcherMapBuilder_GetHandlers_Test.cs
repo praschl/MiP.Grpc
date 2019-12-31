@@ -73,7 +73,7 @@ namespace MiP.Gprc.Test
 
         private class ThreeCommandHandler : ICommandHandler<string>
         {
-            public Task RunAsync(string request, ServerCallContext context)
+            public Task RunAsync(string command, ServerCallContext context)
             {
                 throw new NotImplementedException();
             }
@@ -81,7 +81,7 @@ namespace MiP.Gprc.Test
 
         private class FourCommandHandler : ICommandHandler<int>
         {
-            public Task RunAsync(int request, ServerCallContext context)
+            public Task RunAsync(int command, ServerCallContext context)
             {
                 throw new NotImplementedException();
             }

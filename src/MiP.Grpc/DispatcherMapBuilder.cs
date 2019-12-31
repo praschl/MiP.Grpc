@@ -90,7 +90,7 @@ namespace MiP.Grpc
                 // get the attributes from the method, the class could implement more than just one IHandler<,>
                 var methodAuthorizeAttributes = method.GetCustomAttributes<AuthorizeAttribute>();
                 var methodHandlesAttribute = method.GetCustomAttribute<HandlesAttribute>();
-                
+
                 var methodName = methodHandlesAttribute?.MethodName ?? name;
 
                 var key = new DispatcherMapKey(methodName, args.RequestType, args.ResponseType);

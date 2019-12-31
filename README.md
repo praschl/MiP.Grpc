@@ -85,14 +85,17 @@ public class SayHelloHandler : IHandler<HelloRequest, HelloReply>
 ```
 The handler needs to be registered in the `ConfigureServices()` method, which can be done in two ways. The method is passed an action which gets a `IDispatcherMapBuilder` as parameter. This builder can then be used to add types manually or all implementations of `IHandler<,>` of an assembly automatically.
 
-#### Add assembly types
+Then the return type is `Google.Protobuf.WellKnownTypes.Empty` and the Request is more like a command, you can also implement the `ICommandHandler<TCommand>` interface which does not specify a return type:
 ```csharp
-services.AddDispatchedGrpcHandlers(builder =>
-  builder.Add(Assembly.GetExecutingAssembly()));
+public interface ICommandHandler<TCommand>
+{
+    Task RunAsync(TCommand command, ServerCallContext context);
+}
 ```
-The method will scan for types implementing `IHandler<TRequest, TResponse>` and register them with a transient lifetime.
+You can also have a class with multiple implementations of `IHandler<TRequest, TResponse>` or `ICommandHandler<TCommand>`, but I suggest not to overuse this feature, since that would defeat the purpose of separating the implementations.
 
-Per convention, a found implementation thats called "SayHelloHandler" will handle the "SayHello" method. However you can handle a method with another name, if you attach the `HandlesAttribute` to the class
+#### Specifying the handled methods name.
+Per convention, an implementation thats called "SayHelloHandler" will handle the "SayHello" method, but you can handle a method with another name, if you attach the `HandlesAttribute` to the class
 ```csharp
 [Handles("SayHello")] // class will handle the "SayHello" method regardless of its name.
 public class CanHandleSay : IHandler<CanHandleSomeRequest, CanHandleSomeResponse>
@@ -100,29 +103,29 @@ public class CanHandleSay : IHandler<CanHandleSomeRequest, CanHandleSomeResponse
   // ...
 }
 ```
-or to the method, which is more useful when having a class with multiple implementations of `IHandler<TRequest, TResponse>` or `ICommandHandler<TRequest>`
+or to the method, which is useful when having a class with multiple implementations of `IHandler<TRequest, TResponse>` or `ICommandHandler<TCommand>`
 ```csharp
-public class CanHandleSay : IHandler<HelloRequest, HelloResponse>, IHandler<HowdyRequest, HowdyResponse>
+public class CanHandleSome : IHandler<HelloRequest, HelloResponse>, IHandler<HowdyRequest, HowdyResponse>
 {
   [Handles("SayHello")]
-  public Task<HelloResponse> RunAsync(HelloRequest request, ServerCallContext context)
-  { //...
-  }
+  public Task<HelloResponse> RunAsync(HelloRequest request, ServerCallContext context) { }
   
   [Handles("SayHowdy")]
-  public Task<HowdyResponse> RunAsync(HowdyRequest request, ServerCallContext context)
-  { //...
-  }
-
-  // can also add handler methods for ICommandHandler<TCommand>
+  public Task<HowdyResponse> RunAsync(HowdyRequest request, ServerCallContext context) { }
 }
 ```
-
 Priority of finding the name is
 1. `HandlesAttribute`s on method, MethodName property
 2. `HandlesAttribute`s on class, MethodName property
 3. Name of class without "Handler"
 4. Name of class
+
+#### Add assembly types
+```csharp
+services.AddDispatchedGrpcHandlers(builder =>
+  builder.Add(Assembly.GetExecutingAssembly()));
+```
+The method will scan for types implementing `IHandler<TRequest, TResponse>` or `ICommandHandler<TCommand>` and register them with a transient lifetime.
 
 #### Add types manually
 ```csharp
@@ -176,7 +179,7 @@ public class IHandler<Empty, Empty>
 ## Authorization
 Authorization is supported by the use of the `Microsoft.AspNetCore.Authorization.AuthorizeAttribute` attribute.
 
-That's the same attribute you would place on a method when implementing the service manually. Just place the attribute on the handling method and it will be copied to the handled method when the code is generated. If your handler implements more than just one `IHandler<,>` you can also place the attribute on the class to 
+That's the same attribute you would place on a method when implementing the service manually. Just place the attribute on the handling method and it will be copied to the handled method when the code is generated. If your handler implements more than just one `IHandler<,>` or `ICommandHandler<TCommand>` you can also place the attribute on the class to 
 activate authorization for all methods of this handler class.
 
 To add an `AuthorizeAttribute` to the generated class (which will activate it for all methods), use the action in `CompileAndMapGrpcServiceDispatcher()`:
@@ -190,6 +193,7 @@ endpoints.CompileAndMapGrpcServiceDispatcher(app.ApplicationServices, typeof(Gre
 ```
 
 ## Extending
+### Dispatcher
 Each method of the generated service implementation does one very simple thing, it calls 
 ```csharp
 dispatcher.Dispatch<TRequest, TResponse, THandler>(request, context);
@@ -204,3 +208,12 @@ public interface IDispatcher
 The default dispatcher is registered with transient lifetime scope when calling `AddDispatchedGrpcHandlers()` and it does nothing more than resolve `IHandler<TRequest, TResult>` call it, and return the result.
 
 You could implement your own `IDispatcher` that adds functionality, you just have to register it after the call to `AddDispatchedGrpcHandlers()`. Do not register it as a singleton, when you have a dependency on the `IServiceLocator`, use Scoped or Transient lifetime.
+
+### CommandHandlerAdapter
+The dispatcher also gets called for implementations of `ICommandHandler<TCommand>`, the concrete handler type will be a `CommandHandlerAdapter<TCommand, TCommandHandler>`.
+
+You can replace the default `CommandHandlerAdapter<TCommand, TCommandHandler>` with your own by registering your implementation as an open type after you called `AddDispatchedGrpcHandlers` in the `ConfigureServices` method:
+```csharp
+services.AddTransient(typeof(CommandHandlerAdapter<,>));
+```
+The default implementation only lets inject the concrete command handler in the constructor, calls it in `RunAsync()` and always returns a new instance of `Google.Protobuf.WellKnownTypes.Empty`

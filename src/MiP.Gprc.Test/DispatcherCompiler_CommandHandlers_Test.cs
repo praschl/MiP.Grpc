@@ -142,15 +142,15 @@ namespace MiP.Gprc.Test
             result.GetMethod(nameof(TwoHandlers.Two)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(_methodTwoAttributes);
         }
 
-        private void FakeCommandHandler<TRequest, THandler>(string methodName, TRequest request, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
-            where THandler : ICommandHandler<TRequest>
+        private void FakeCommandHandler<TCommand, THandler>(string methodName, TCommand command, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
+            where THandler : ICommandHandler<TCommand>
         {
             attributes ??= new AuthorizeAttribute[0];
 
-            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TRequest), typeof(Protobuf.Empty)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TRequest), typeof(void)), typeof(THandler), attributes));
+            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TCommand), typeof(Protobuf.Empty)))
+                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TCommand), typeof(void)), typeof(THandler), attributes));
 
-            A.CallTo(() => _dispatcher.Dispatch<TRequest, Protobuf.Empty, CommandHandlerAdapter<TRequest, ICommandHandler<TRequest>>>(request, _callContext, methodName))
+            A.CallTo(() => _dispatcher.Dispatch<TCommand, Protobuf.Empty, CommandHandlerAdapter<TCommand, ICommandHandler<TCommand>>>(command, _callContext, methodName))
                 .Returns(Task.FromResult(new Protobuf.Empty()));
         }
 
@@ -169,7 +169,7 @@ namespace MiP.Gprc.Test
 
         public class StringHandler : ICommandHandler<string>
         {
-            public Task RunAsync(string request, ServerCallContext context)
+            public Task RunAsync(string command, ServerCallContext context)
             {
                 return Task.CompletedTask;
             }
@@ -177,7 +177,7 @@ namespace MiP.Gprc.Test
 
         public class IntHandler : ICommandHandler<int>
         {
-            public Task RunAsync(int request, ServerCallContext context)
+            public Task RunAsync(int command, ServerCallContext context)
             {
                 return Task.CompletedTask;
             }
@@ -198,7 +198,7 @@ namespace MiP.Gprc.Test
 
         public class EmptyOneHandler : ICommandHandler<Protobuf.Empty>
         {
-            public Task RunAsync(Protobuf.Empty request, ServerCallContext context)
+            public Task RunAsync(Protobuf.Empty command, ServerCallContext context)
             {
                 return Task.CompletedTask;
             }
@@ -206,7 +206,7 @@ namespace MiP.Gprc.Test
 
         public class EmptyTwoHandler : ICommandHandler<Protobuf.Empty>
         {
-            public Task RunAsync(Protobuf.Empty request, ServerCallContext context)
+            public Task RunAsync(Protobuf.Empty command, ServerCallContext context)
             {
                 return Task.CompletedTask;
             }

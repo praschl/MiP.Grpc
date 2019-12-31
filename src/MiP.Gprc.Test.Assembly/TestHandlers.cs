@@ -23,7 +23,7 @@ namespace MiP.Gprc.Test.Assembly
 
     public class AssemblyThreeCommandHandler : ICommandHandler<string>
     {
-        public Task RunAsync(string request, ServerCallContext context)
+        public Task RunAsync(string command, ServerCallContext context)
         {
             throw new NotImplementedException();
         }
@@ -31,7 +31,7 @@ namespace MiP.Gprc.Test.Assembly
 
     public class AssemblyFourCommandHandler : ICommandHandler<int>
     {
-        public Task RunAsync(int request, ServerCallContext context)
+        public Task RunAsync(int command, ServerCallContext context)
         {
             throw new NotImplementedException();
         }

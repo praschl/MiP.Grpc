@@ -5,11 +5,11 @@ using MiP.Grpc;
 
 namespace Mip.Grpc.Example
 {
-    public class SayOneCommandHandler : ICommandHandler<OneRequest>
+    public class SayOneCommandHandler : ICommandHandler<OneCommand>
     {
-        public Task RunAsync(OneRequest request, ServerCallContext context)
+        public Task RunAsync(OneCommand command, ServerCallContext context)
         {
-            Console.WriteLine("OneCommand called: " + request.One);
+            Console.WriteLine("OneCommand called: " + command.One);
 
             return Task.CompletedTask;
         }

@@ -40,12 +40,12 @@ namespace Mip.Grpc.Example
                 //   endpoints.MapGrpcService<GreeterService>();
 
                 // but instead, you write
-                endpoints.CompileAndMapGrpcServiceDispatcher(app.ApplicationServices, typeof(Greeter.GreeterBase), cb => {
-                    //cb.AddGlobalAuthorization("glopoli1", "gloroli1", "gloschema1");
-                    //cb.AddGlobalAuthorization("glopoli2", "gloroli2", "gloschema2");
+                endpoints.CompileAndMapGrpcServiceDispatcher<Greeter.GreeterBase>(app.ApplicationServices, cb => {
+                    //cb.AddGlobalAuthorization("global.policy.1", "global.role.1", "global.schema.1");
+                    //cb.AddGlobalAuthorization("global.policy.2", "global.role.2", "global.schema.2");
                 });
                 // this will compile a class deriving from Greeter.GreeterBase
-                // overriding its methods so that they get forwarded to implementations of IHandler<TRequest, TResponse>
+                // overriding its methods so that they get forwarded to implementations of IHandler<TRequest, TResponse> or ICommandHandler<TCommand>
 
                 endpoints.MapGet("/", async context =>
                 {

@@ -141,7 +141,7 @@ namespace MiP.Gprc.Test
 
         private class ThreeCommandHandler : ICommandHandler<int>
         {
-            public Task RunAsync(int request, ServerCallContext context)
+            public Task RunAsync(int command, ServerCallContext context)
             {
                 throw new NotImplementedException();
             }

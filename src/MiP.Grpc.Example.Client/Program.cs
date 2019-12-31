@@ -59,7 +59,7 @@ namespace MiP.Grpc.Example.Client
                 Console.WriteLine("something random said");
                 await Task.Delay(200);
 
-                await client.SayOneAsync(new OneRequest { One = "Eins" });
+                await client.SayOneAsync(new OneCommand { One = "Eins" });
                 Console.WriteLine("One said");
                 await Task.Delay(200);
 
