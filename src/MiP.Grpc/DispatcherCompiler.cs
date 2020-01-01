@@ -61,7 +61,7 @@ public class {Class} : {BaseClass}
             public const string MethodCommandHandlerCode = @"{Attributes}
     public async override Task<Empty> {Method}({Request} request, ServerCallContext context)
     {
-        return await _dispatcher.Dispatch<{Request}, Empty, CommandHandlerAdapter<{Request}, {Handler}>>(request, context);
+        return await _dispatcher.Dispatch<{Request}, Empty, ICommandHandlerAdapter<{Request}, {Handler}>>(request, context);
     }
 ";
 

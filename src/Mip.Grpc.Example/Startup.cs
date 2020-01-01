@@ -23,6 +23,9 @@ namespace Mip.Grpc.Example
                     // override the default SayNothingHandler
                     builder.Add<AlternativeSayNothingHandler>(nameof(Greeter.GreeterBase.SayNothing));
                 });
+
+            // how to use your own ICommandHandlerAdapter<,>
+            //services.AddTransient(typeof(ICommandHandlerAdapter<,>), typeof(MyOwnCommandHandlerAdapter<,>));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

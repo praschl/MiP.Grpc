@@ -210,10 +210,10 @@ The default dispatcher is registered with transient lifetime scope when calling 
 You could implement your own `IDispatcher` that adds functionality, you just have to register it after the call to `AddDispatchedGrpcHandlers()`. Do not register it as a singleton, when you have a dependency on the `IServiceLocator`, use Scoped or Transient lifetime.
 
 ### CommandHandlerAdapter
-The dispatcher also gets called for implementations of `ICommandHandler<TCommand>`, the concrete handler type will be a `CommandHandlerAdapter<TCommand, TCommandHandler>`.
+The dispatcher also gets called for implementations of `ICommandHandler<TCommand>`, the concrete handler type will be an `ICommandHandlerAdapter<TCommand, TCommandHandler>`.
 
-You can replace the default `CommandHandlerAdapter<TCommand, TCommandHandler>` with your own by registering your implementation as an open type after you called `AddDispatchedGrpcHandlers` in the `ConfigureServices` method:
+You can replace the default implementation `ICommandHandlerAdapter<TCommand, TCommandHandler>` with your own by registering your implementation as an open type after you called `AddDispatchedGrpcHandlers` in the `ConfigureServices` method:
 ```csharp
-services.AddTransient(typeof(CommandHandlerAdapter<,>));
+services.AddTransient(typeof(ICommandHandlerAdapter<,>), typeof(YourOwnCommandHandlerAdapter<,>));
 ```
-The default implementation only lets inject the concrete command handler in the constructor, calls it in `RunAsync()` and always returns a new instance of `Google.Protobuf.WellKnownTypes.Empty`
+The default implementation only gets the concrete command handler injected to the constructor, calls it in `RunAsync()` and always returns a new instance of `Google.Protobuf.WellKnownTypes.Empty`

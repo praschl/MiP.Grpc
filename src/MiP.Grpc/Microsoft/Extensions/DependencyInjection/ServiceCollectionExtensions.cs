@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
             )
         {
             services.AddTransient<IDispatcher, Dispatcher>();
-            services.AddTransient(typeof(CommandHandlerAdapter<,>));
+            services.AddTransient(typeof(ICommandHandlerAdapter<,>), typeof(CommandHandlerAdapter<,>));
 
             DispatcherMapBuilder mapBuilder = new DispatcherMapBuilder();
             services.AddSingleton<IHandlerStore>(mapBuilder);

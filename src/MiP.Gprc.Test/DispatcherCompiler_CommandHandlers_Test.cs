@@ -121,9 +121,9 @@ namespace MiP.Gprc.Test
             executionResult1.Should().Be(new Protobuf.Empty());
             executionResult2.Should().Be(new Protobuf.Empty());
 
-            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, CommandHandlerAdapter<Protobuf.Empty, EmptyOneHandler>>(new Protobuf.Empty(), _callContext, "One"))
+            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, ICommandHandlerAdapter<Protobuf.Empty, EmptyOneHandler>>(new Protobuf.Empty(), _callContext, "One"))
                 .MustHaveHappenedOnceExactly();
-            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, CommandHandlerAdapter<Protobuf.Empty, EmptyTwoHandler>>(new Protobuf.Empty(), _callContext, "Two"))
+            A.CallTo(() => _dispatcher.Dispatch<Protobuf.Empty, Protobuf.Empty, ICommandHandlerAdapter<Protobuf.Empty, EmptyTwoHandler>>(new Protobuf.Empty(), _callContext, "Two"))
                 .MustHaveHappenedOnceExactly();
         }
 
