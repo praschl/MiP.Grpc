@@ -1,6 +1,6 @@
 ﻿using Protobuf = Google.Protobuf.WellKnownTypes;
 
-namespace MiP.Grpc.Internal
+namespace MiP.Grpc
 {
     /// <summary>
     /// This is an adapter interface that helps the generated code to treat <see cref="ICommandHandler{TRequest}"/> just like a <see cref="IHandler{TRequest, TResponse}"/> with TResponse being void.

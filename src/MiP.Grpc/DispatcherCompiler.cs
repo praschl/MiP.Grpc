@@ -16,6 +16,7 @@ namespace MiP.Grpc
     {
         private const string Base = "Base";
         private const string Dispatcher = "Dispatcher";
+        private const string GlobalPrefix = "global::";
 
         private static class Tag
         {
@@ -44,24 +45,24 @@ public class {Class} : {BaseClass}
 ";
 
             public const string ConstructorCode = @"
-    private readonly IDispatcher _dispatcher;
-    public {Constructor}(IDispatcher dispatcher)
+    private readonly global::MiP.Grpc.IDispatcher _dispatcher;
+    public {Constructor}(global::MiP.Grpc.IDispatcher dispatcher)
     {
         _dispatcher = dispatcher;
     }
 ";
 
             public const string MethodHandlerCode = @"{Attributes}
-    public async override Task<{Response}> {Method}({Request} request, ServerCallContext context)
+    public async override global::System.Threading.Tasks.Task<{Response}> {Method}({Request} request, global::Grpc.Core.ServerCallContext context)
     {
         return await _dispatcher.Dispatch<{Request}, {Response}, {Handler}>(request, context);
     }
 ";
 
             public const string MethodCommandHandlerCode = @"{Attributes}
-    public async override Task<Empty> {Method}({Request} request, ServerCallContext context)
+    public async override global::System.Threading.Tasks.Task<global::Google.Protobuf.WellKnownTypes.Empty> {Method}({Request} request, global::Grpc.Core.ServerCallContext context)
     {
-        return await _dispatcher.Dispatch<{Request}, Empty, ICommandHandlerAdapter<{Request}, {Handler}>>(request, context);
+        return await _dispatcher.Dispatch<{Request}, global::Google.Protobuf.WellKnownTypes.Empty, global::MiP.Grpc.ICommandHandlerAdapter<{Request}, {Handler}>>(request, context);
     }
 ";
 
@@ -70,7 +71,7 @@ return typeof({Class});
 ";
 
             public const string AuthorizeAttributeCode = @"
-    [Authorize({AttributeProperties})]";
+    [global::Microsoft.AspNetCore.Authorization.Authorize({AttributeProperties})]";
 
             public const string PolicyPropertyCode = @"Policy = ""{Policy}""";
             public const string RolesPropertyCode = @"Roles = ""{Roles}""";
@@ -110,9 +111,7 @@ return typeof({Class});
                 {
                     typeof(Task<>),
                     typeof(IDispatcher),
-                    typeof(IHandler<,>),
-                    typeof(ICommandHandler<>),
-                    typeof(CommandHandlerAdapter<,>),
+                    typeof(ICommandHandlerAdapter<,>),
                     typeof(ServerCallContext),
                     typeof(AuthorizeAttribute),
                     typeof(Proto.Empty)
@@ -122,9 +121,6 @@ return typeof({Class});
                     ScriptOptions.Default
                         .WithReferences(
                             types.Select(t => t.Assembly).Distinct()
-                            )
-                        .WithImports(
-                            types.Select(t => t.Namespace).Distinct()
                             )
                     )
                     .GetAwaiter().GetResult();
@@ -148,7 +144,7 @@ return typeof({Class});
 
             var className = GetGeneratedName(serviceBaseType);
 
-            var baseClassName = GetNestedClassName(serviceBaseType); // + is used by framework for nested classes
+            var baseClassName = GetFullClassName(serviceBaseType); // + is used by framework for nested classes
 
             // get source of the class with all its methods
             var source = GenerateSource(handlerMaps, className, baseClassName);
@@ -163,16 +159,9 @@ return typeof({Class});
             return new GenerateSourceResult(source, usedTypes);
         }
 
-        private static string GetNestedClassName(Type serviceBaseType)
+        private static string GetFullClassName(Type serviceBaseType)
         {
-            var className = serviceBaseType.Name;
-            while (serviceBaseType.IsNested)
-            {
-                serviceBaseType = serviceBaseType.DeclaringType;
-                className = serviceBaseType.Name + "." + className;
-            }
-
-            return className;
+            return GlobalPrefix + serviceBaseType.FullName.Replace('+', '.');
         }
 
         private static string GetGeneratedName(Type serviceBaseType)
@@ -216,9 +205,9 @@ return typeof({Class});
             return method
                 .Replace(Tag.Attributes, attributes, StringComparison.Ordinal)
                 .Replace(Tag.Method, definition.Key.MethodName, StringComparison.Ordinal)
-                .Replace(Tag.Request, GetNestedClassName(definition.Key.RequestType), StringComparison.Ordinal)
-                .Replace(Tag.Response, GetNestedClassName(definition.Key.ResponseType), StringComparison.Ordinal)
-                .Replace(Tag.Handler, GetNestedClassName(definition.HandlerType), StringComparison.Ordinal);
+                .Replace(Tag.Request, GetFullClassName(definition.Key.RequestType), StringComparison.Ordinal)
+                .Replace(Tag.Response, GetFullClassName(definition.Key.ResponseType), StringComparison.Ordinal)
+                .Replace(Tag.Handler, GetFullClassName(definition.HandlerType), StringComparison.Ordinal);
         }
 
         private static string GenerateAttributes(IReadOnlyCollection<AuthorizeAttribute> authorizeAttributes)
