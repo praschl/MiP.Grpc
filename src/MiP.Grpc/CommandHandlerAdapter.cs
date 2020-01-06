@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using Protobuf = Google.Protobuf.WellKnownTypes;
 
-namespace MiP.Grpc.Internal
+namespace MiP.Grpc
 {
     internal class CommandHandlerAdapter<TCommand, TCommandHandler> : ICommandHandlerAdapter<TCommand, TCommandHandler>
         where TCommandHandler : ICommandHandler<TCommand>

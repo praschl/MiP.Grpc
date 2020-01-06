@@ -18,14 +18,13 @@ namespace Mip.Grpc.Example
             services.AddDispatchedGrpcHandlers(
                 builder =>
                 {
-                    builder.Add(typeof(Startup).Assembly);
+                    builder.Add(typeof(Startup).Assembly, typeof(Greeter.GreeterBase));
+                    // for now lets add all handlers for both services, we do better checking later
+                    builder.Add(typeof(Startup).Assembly, typeof(Calculator.CalculatorBase));
 
                     // override the default SayNothingHandler
-                    builder.Add<AlternativeSayNothingHandler>(nameof(Greeter.GreeterBase.SayNothing));
+                    builder.Add<AlternativeSayNothingHandler>(typeof(Greeter.GreeterBase), nameof(Greeter.GreeterBase.SayNothing));
                 });
-
-            // how to use your own ICommandHandlerAdapter<,>
-            //services.AddTransient(typeof(ICommandHandlerAdapter<,>), typeof(MyOwnCommandHandlerAdapter<,>));
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)

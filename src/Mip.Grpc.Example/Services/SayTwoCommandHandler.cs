@@ -8,7 +8,8 @@ namespace Mip.Grpc.Example
 {
     public class SayTwoCommandHandler : ICommandHandler<Empty>
     {
-        public Task RunAsync(Empty command, ServerCallContext context)
+        // explicit implementations are found, too
+        Task ICommandHandler<Empty>.RunAsync(Empty command, ServerCallContext context)
         {
             Console.WriteLine("TwoCommand called: " + context.Host);
 

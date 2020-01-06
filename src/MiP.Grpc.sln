@@ -11,7 +11,12 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Mip.Grpc.Example", "Mip.Grp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiP.Grpc.Example.Client", "MiP.Grpc.Example.Client\MiP.Grpc.Example.Client.csproj", "{B9537828-E4B7-47D0-B2D9-28480FBF7BBA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MiP.Gprc.Test.Assembly", "MiP.Gprc.Test.Assembly\MiP.Gprc.Test.Assembly.csproj", "{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MiP.Gprc.Test.Assembly", "MiP.Gprc.Test.Assembly\MiP.Gprc.Test.Assembly.csproj", "{A83A2D5D-3F16-42A8-A2BC-3EF8B57BEB3C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{21B0B5A9-AF76-45B7-BD41-C21810ACD53F}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

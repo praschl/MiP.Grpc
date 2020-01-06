@@ -1,5 +1,4 @@
 ﻿using MiP.Grpc;
-using MiP.Grpc.Internal;
 using System;
 
 namespace Microsoft.Extensions.DependencyInjection
@@ -22,6 +21,9 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddTransient<IDispatcher, Dispatcher>();
             services.AddTransient(typeof(ICommandHandlerAdapter<,>), typeof(CommandHandlerAdapter<,>));
+            services.AddTransient(typeof(IServerStreamHandlerAdapter<,,>), typeof(ServerStreamHandlerAdapter<,,>));
+            services.AddTransient(typeof(IClientStreamHandlerAdapter<,,>), typeof(ClientStreamHandlerAdapter<,,>));
+            services.AddTransient(typeof(IBidiStreamHandlerAdapter<,,>), typeof(BidiStreamHandlerAdapter<,,>));
 
             DispatcherMapBuilder mapBuilder = new DispatcherMapBuilder();
             services.AddSingleton<IHandlerStore>(mapBuilder);

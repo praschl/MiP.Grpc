@@ -7,15 +7,14 @@ namespace Mip.Grpc.Example
 {
     public class SayHowdyHandler : IHandler<HowdyRequest, HowdyReply>
     {
-        private Guid _guid = Guid.NewGuid();
-
-        public Task<HowdyReply> RunAsync(HowdyRequest request, ServerCallContext context)
+        // explicit implementations are found, too
+        Task<HowdyReply> IHandler<HowdyRequest, HowdyReply>.RunAsync(HowdyRequest request, ServerCallContext context)
         {
             Console.WriteLine(context.Host);
 
             return Task.FromResult(new HowdyReply
             {
-                Message = "NEW Howdy" + request.Name + _guid,
+                Message = "Howdy" + request.Name,
                 Number = request.Number + 1
             });
         }

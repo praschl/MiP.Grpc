@@ -1,8 +1,8 @@
-//using System;
-//using System.Threading.Tasks;
 //using Google.Protobuf.WellKnownTypes;
 //using Grpc.Core;
 //using Microsoft.AspNetCore.Authorization;
+//using System;
+//using System.Threading.Tasks;
 
 //namespace Mip.Grpc.Example
 //{
@@ -39,6 +39,21 @@
 //        public override Task<Empty> AskNothing(Empty request, ServerCallContext context)
 //        {
 //            return base.AskNothing(request, context);
+//        }
+
+//        public override Task SentenceToWords(SentenceMessage request, IServerStreamWriter<WordMessage> responseStream, ServerCallContext context)
+//        {
+//            return base.SentenceToWords(request, responseStream, context);
+//        }
+
+//        public override Task<SentenceMessage> WordsToSentence(IAsyncStreamReader<WordMessage> requestStream, ServerCallContext context)
+//        {
+//            return base.WordsToSentence(requestStream, context);
+//        }
+
+//        public override Task ReverseWords(IAsyncStreamReader<WordMessage> requestStream, IServerStreamWriter<ReverseWordMessage> responseStream, ServerCallContext context)
+//        {
+//            return base.ReverseWords(requestStream, responseStream, context);
 //        }
 //    }
 //}
