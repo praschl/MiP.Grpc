@@ -18,6 +18,9 @@ service Greeter {
   // commands
   rpc SayOne (OneCommand) returns (google.protobuf.Empty);
   rpc SayTwo (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+  // a command that exists with same signature in other service
+  rpc Duplicate (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message HelloRequest {

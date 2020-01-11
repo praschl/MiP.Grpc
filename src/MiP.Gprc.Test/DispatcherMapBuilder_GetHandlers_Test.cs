@@ -24,10 +24,11 @@ namespace MiP.Gprc.Test
         public void GetHandlers_returns_the_added_concrete_types()
         {
             // arrange
-            _builder.Add(typeof(OneHandler), null);
-            _builder.Add<TwoHandler>(null);
-            _builder.Add(typeof(ThreeCommandHandler), null);
-            _builder.Add<FourCommandHandler>(null);
+            _builder.Add(typeof(OneHandler), null, null);
+            _builder.Add<TwoHandler>(null, null);
+            _builder.Add(typeof(ThreeCommandHandler), null, null);
+            _builder.Add(typeof(ThreeCommandHandler), null, typeof(string)); // even when registered for another service there should not be a duplicate returned
+            _builder.Add<FourCommandHandler>(null, null);
 
             // expect
             Type[] expectedTypes = { typeof(OneHandler), typeof(TwoHandler), typeof(ThreeCommandHandler), typeof(FourCommandHandler) };
@@ -43,7 +44,7 @@ namespace MiP.Gprc.Test
         public void GetHandlers_returns_concrete_types_added_from_assembly()
         {
             // arrange
-            _builder.Add(typeof(AssemblyOneHandler).Assembly);
+            _builder.Add(typeof(AssemblyOneHandler).Assembly, null);
 
             // expect
             Type[] expectedTypes = { typeof(AssemblyOneHandler), typeof(AssemblyTwoHandler), typeof(AssemblyThreeCommandHandler), typeof(AssemblyFourCommandHandler) };

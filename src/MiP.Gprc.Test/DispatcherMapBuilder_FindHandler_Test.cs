@@ -21,32 +21,80 @@ namespace MiP.Gprc.Test
         }
 
         [TestMethod]
-        public void Add_generates_default_name()
+        public void Add_generates_default_name_and_default_service()
         {
             // arrange
-            _builder.Add(typeof(OneHandler), null);
+            _builder.Add(typeof(AllDefaultHandler), null, null);
 
             // expected
-            var expected = new DispatcherMap(new DispatcherMapKey("One", typeof(int), typeof(string)), typeof(OneHandler), new AuthorizeAttribute[0]);
+            var expected = new DispatcherMap(new DispatcherMapKey("AllDefault", typeof(int), typeof(string), typeof(object)), typeof(AllDefaultHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result = _builder.FindHandlerMap("One", typeof(int), typeof(string));
+            var result = _builder.FindHandlerMap("AllDefault", typeof(int), typeof(string), typeof(object));
 
             // assert
             result.Should().BeEquivalentTo(expected);
         }
 
         [TestMethod]
-        public void Add_generates_name_from_attribute()
+        public void Add_generates_default_name_and_gets_service_from_attribute()
         {
             // arrange
-            _builder.Add(typeof(TwoHandler), null);
+            _builder.Add(typeof(DefaultName_ServiceFromAttributeHandler), null, null);
 
             // expected
-            var expected = new DispatcherMap(new DispatcherMapKey("Second", typeof(string), typeof(int)), typeof(TwoHandler), new AuthorizeAttribute[0]);
+            var expected = new DispatcherMap(new DispatcherMapKey("DefaultName_ServiceFromAttribute", typeof(int), typeof(string), typeof(string)), typeof(DefaultName_ServiceFromAttributeHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result = _builder.FindHandlerMap("Second", typeof(string), typeof(int));
+            var result = _builder.FindHandlerMap("DefaultName_ServiceFromAttribute", typeof(int), typeof(string), typeof(string));
+
+            // assert
+            result.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public void Add_generates_default_name_and_gets_service_from_parameter()
+        {
+            // arrange
+            _builder.Add(typeof(AllDefaultHandler), null, typeof(string));
+
+            // expected
+            var expected = new DispatcherMap(new DispatcherMapKey("AllDefault", typeof(int), typeof(string), typeof(string)), typeof(AllDefaultHandler), new AuthorizeAttribute[0]);
+
+            // act trying to find by default name
+            var result = _builder.FindHandlerMap("AllDefault", typeof(int), typeof(string), typeof(string));
+
+            // assert
+            result.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public void Add_gets_name_from_attribute()
+        {
+            // arrange
+            _builder.Add(typeof(NameFromAttributeHandler), null, null);
+
+            // expected
+            var expected = new DispatcherMap(new DispatcherMapKey("Second", typeof(string), typeof(int), typeof(object)), typeof(NameFromAttributeHandler), new AuthorizeAttribute[0]);
+
+            // act trying to find by default name
+            var result = _builder.FindHandlerMap("Second", typeof(string), typeof(int), typeof(object));
+
+            // assert
+            result.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public void Add_gets_name_and_service_from_attribute()
+        {
+            // arrange
+            _builder.Add(typeof(NameAndServiceFromAttributeHandler), null, null);
+
+            // expected
+            var expected = new DispatcherMap(new DispatcherMapKey("Fourth", typeof(string), typeof(int), typeof(string)), typeof(NameAndServiceFromAttributeHandler), new AuthorizeAttribute[0]);
+
+            // act trying to find by default name
+            var result = _builder.FindHandlerMap("Fourth", typeof(string), typeof(int), typeof(string));
 
             // assert
             result.Should().BeEquivalentTo(expected);
@@ -56,13 +104,29 @@ namespace MiP.Gprc.Test
         public void Add_generates_name_from_parameter()
         {
             // arrange
-            _builder.Add(typeof(TwoHandler), "OneMore");
+            _builder.Add(typeof(NameFromAttributeHandler), "OneMore", null);
 
             // expected
-            var expected = new DispatcherMap(new DispatcherMapKey("OneMore", typeof(string), typeof(int)), typeof(TwoHandler), new AuthorizeAttribute[0]);
+            var expected = new DispatcherMap(new DispatcherMapKey("OneMore", typeof(string), typeof(int), typeof(object)), typeof(NameFromAttributeHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result = _builder.FindHandlerMap("OneMore", typeof(string), typeof(int));
+            var result = _builder.FindHandlerMap("OneMore", typeof(string), typeof(int), typeof(object));
+
+            // assert
+            result.Should().BeEquivalentTo(expected);
+        }
+
+        [TestMethod]
+        public void Add_gets_name_and_service_from_parameter()
+        {
+            // arrange
+            _builder.Add(typeof(NameAndServiceFromAttributeHandler), "FromParam", typeof(long));
+
+            // expected
+            var expected = new DispatcherMap(new DispatcherMapKey("FromParam", typeof(string), typeof(int), typeof(long)), typeof(NameAndServiceFromAttributeHandler), new AuthorizeAttribute[0]);
+
+            // act trying to find by default name
+            var result = _builder.FindHandlerMap("FromParam", typeof(string), typeof(int), typeof(long));
 
             // assert
             result.Should().BeEquivalentTo(expected);
@@ -72,13 +136,13 @@ namespace MiP.Gprc.Test
         public void Add_generates_default_name_for_CommandHandler()
         {
             // arrange
-            _builder.Add(typeof(ThreeCommandHandler), null);
+            _builder.Add(typeof(DefaultNameCommandHandler), null, null);
 
             // expected
-            var expected = new DispatcherMap(new DispatcherMapKey("Three", typeof(int), typeof(void)), typeof(ThreeCommandHandler), new AuthorizeAttribute[0]);
+            var expected = new DispatcherMap(new DispatcherMapKey("DefaultName", typeof(int), typeof(void), typeof(object)), typeof(DefaultNameCommandHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result = _builder.FindHandlerMap("Three", typeof(int), typeof(Protobuf.Empty));
+            var result = _builder.FindHandlerMap("DefaultName", typeof(int), typeof(Protobuf.Empty), typeof(object));
 
             // assert
             result.Should().BeEquivalentTo(expected);
@@ -88,15 +152,15 @@ namespace MiP.Gprc.Test
         public void Add_finds_multiple_implementations()
         {
             // arrange
-            _builder.Add(typeof(MultipleHandler), null);
+            _builder.Add(typeof(MultipleHandler), null, null);
 
             // expected
-            var expected1 = new DispatcherMap(new DispatcherMapKey("Multiple", typeof(int), typeof(string)), typeof(MultipleHandler), new AuthorizeAttribute[0]);
-            var expected2 = new DispatcherMap(new DispatcherMapKey("Multiple", typeof(string), typeof(int)), typeof(MultipleHandler), new AuthorizeAttribute[0]);
+            var expected1 = new DispatcherMap(new DispatcherMapKey("Multiple", typeof(int), typeof(string), typeof(object)), typeof(MultipleHandler), new AuthorizeAttribute[0]);
+            var expected2 = new DispatcherMap(new DispatcherMapKey("Multiple", typeof(string), typeof(int), typeof(object)), typeof(MultipleHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result1 = _builder.FindHandlerMap("Multiple", typeof(int), typeof(string));
-            var result2 = _builder.FindHandlerMap("Multiple", typeof(string), typeof(int));
+            var result1 = _builder.FindHandlerMap("Multiple", typeof(int), typeof(string), typeof(object));
+            var result2 = _builder.FindHandlerMap("Multiple", typeof(string), typeof(int), typeof(object));
 
             // assert
             result1.Should().BeEquivalentTo(expected1);
@@ -107,22 +171,22 @@ namespace MiP.Gprc.Test
         public void Add_finds_multiple_implementations_using_attribute_on_method()
         {
             // arrange
-            _builder.Add(typeof(MultipleWithAttributesHandler), null);
+            _builder.Add(typeof(MultipleWithAttributesHandler), null, null);
 
             // expected
-            var expected1 = new DispatcherMap(new DispatcherMapKey("OneMethod", typeof(string), typeof(int)), typeof(MultipleWithAttributesHandler), new AuthorizeAttribute[0]);
-            var expected2 = new DispatcherMap(new DispatcherMapKey("TwoMethod", typeof(int), typeof(string)), typeof(MultipleWithAttributesHandler), new AuthorizeAttribute[0]);
+            var expected1 = new DispatcherMap(new DispatcherMapKey("OneMethod", typeof(string), typeof(int), typeof(object)), typeof(MultipleWithAttributesHandler), new AuthorizeAttribute[0]);
+            var expected2 = new DispatcherMap(new DispatcherMapKey("TwoMethod", typeof(int), typeof(string), typeof(int)), typeof(MultipleWithAttributesHandler), new AuthorizeAttribute[0]);
 
             // act trying to find by default name
-            var result1 = _builder.FindHandlerMap("OneMethod", typeof(string), typeof(int));
-            var result2 = _builder.FindHandlerMap("TwoMethod", typeof(int), typeof(string));
+            var result1 = _builder.FindHandlerMap("OneMethod", typeof(string), typeof(int), typeof(object));
+            var result2 = _builder.FindHandlerMap("TwoMethod", typeof(int), typeof(string), typeof(int));
 
             // assert
             result1.Should().BeEquivalentTo(expected1);
             result2.Should().BeEquivalentTo(expected2);
         }
 
-        private class OneHandler : IHandler<int, string>
+        private class AllDefaultHandler : IHandler<int, string>
         {
             public Task<string> RunAsync(int request, ServerCallContext context)
             {
@@ -131,7 +195,7 @@ namespace MiP.Gprc.Test
         }
 
         [Handles("Second")]
-        private class TwoHandler : IHandler<string, int>
+        private class NameFromAttributeHandler : IHandler<string, int>
         {
             public Task<int> RunAsync(string request, ServerCallContext context)
             {
@@ -139,7 +203,25 @@ namespace MiP.Gprc.Test
             }
         }
 
-        private class ThreeCommandHandler : ICommandHandler<int>
+        [Handles("Fourth", ServiceBase = typeof(string))]
+        private class NameAndServiceFromAttributeHandler : IHandler<string, int>
+        {
+            public Task<int> RunAsync(string request, ServerCallContext context)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        [Handles(ServiceBase = typeof(string))]
+        private class DefaultName_ServiceFromAttributeHandler : IHandler<int, string>
+        {
+            public Task<string> RunAsync(int request, ServerCallContext context)
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private class DefaultNameCommandHandler : ICommandHandler<int>
         {
             public Task RunAsync(int command, ServerCallContext context)
             {
@@ -168,7 +250,7 @@ namespace MiP.Gprc.Test
                 throw new NotImplementedException();
             }
 
-            [Handles("TwoMethod")]
+            [Handles("TwoMethod", typeof(int))]
             public Task<string> RunAsync(int request, ServerCallContext context)
             {
                 throw new NotImplementedException();

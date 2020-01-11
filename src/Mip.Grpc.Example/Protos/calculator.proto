@@ -1,11 +1,16 @@
 syntax = "proto3";
 
+import "google/protobuf/Empty.proto";
+
 option csharp_namespace = "Mip.Grpc.Example.Calc";
 
 package calc;
 
 service Calculator {
 	rpc Add (AddRequest) returns(AddResponse);
+
+	// a command that exists with same signature in other service
+	rpc Duplicate (google.protobuf.Empty) returns (google.protobuf.Empty);
 }
 
 message AddRequest {

@@ -57,8 +57,8 @@ namespace MiP.Gprc.Test
         public void Adds_methods_for_IHandler()
         {
             // arrange
-            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), null, 0);
-            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 0, null);
+            FakeHandler<string, int, StringIntHandler, TwoHandlers>(nameof(TwoHandlers.One), null, 0);
+            FakeHandler<int, string, IntStringHandler, TwoHandlers>(nameof(TwoHandlers.Two), 0, null);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(TwoHandlers));
@@ -72,8 +72,8 @@ namespace MiP.Gprc.Test
         public async Task Execution_of_methods_for_IHandler()
         {
             // arrange
-            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), "request one", 14);
-            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 2, "response two");
+            FakeHandler<string, int, StringIntHandler, TwoHandlers>(nameof(TwoHandlers.One), "request one", 14);
+            FakeHandler<int, string, IntStringHandler, TwoHandlers>(nameof(TwoHandlers.Two), 2, "response two");
 
             var compiledType = _compiler.CompileDispatcher(typeof(TwoHandlers));
             var result = Activator.CreateInstance(compiledType, _dispatcher) as TwoHandlers;
@@ -91,8 +91,8 @@ namespace MiP.Gprc.Test
         public void Adds_methods_for_IHandler_with_Empty()
         {
             // arrange
-            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(nameof(EmptyHandlers.One), null, null);
-            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(nameof(EmptyHandlers.Two), null, null);
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler, EmptyHandlers>(nameof(EmptyHandlers.One), null, null);
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler, EmptyHandlers>(nameof(EmptyHandlers.Two), null, null);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(EmptyHandlers));
@@ -106,8 +106,8 @@ namespace MiP.Gprc.Test
         public async Task Execution_of_methods_for_IHandler_with_Empty()
         {
             // arrange
-            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler>(nameof(EmptyHandlers.One), new Protobuf.Empty(), new Protobuf.Empty());
-            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler>(nameof(EmptyHandlers.Two), new Protobuf.Empty(), new Protobuf.Empty());
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyOneHandler, EmptyHandlers>(nameof(EmptyHandlers.One), new Protobuf.Empty(), new Protobuf.Empty());
+            FakeHandler<Protobuf.Empty, Protobuf.Empty, EmptyTwoHandler, EmptyHandlers>(nameof(EmptyHandlers.Two), new Protobuf.Empty(), new Protobuf.Empty());
 
             var compiledType = _compiler.CompileDispatcher(typeof(EmptyHandlers));
             var result = Activator.CreateInstance(compiledType, _dispatcher) as EmptyHandlers;
@@ -130,8 +130,8 @@ namespace MiP.Gprc.Test
         public void Adds_AuthorizeAttribute_to_IHandler_methods()
         {
             // arrange
-            FakeHandler<string, int, StringIntHandler>(nameof(TwoHandlers.One), null, 0, _methodOneAttributes);
-            FakeHandler<int, string, IntStringHandler>(nameof(TwoHandlers.Two), 0, null, _methodTwoAttributes);
+            FakeHandler<string, int, StringIntHandler, TwoHandlers>(nameof(TwoHandlers.One), null, 0, _methodOneAttributes);
+            FakeHandler<int, string, IntStringHandler, TwoHandlers>(nameof(TwoHandlers.Two), 0, null, _methodTwoAttributes);
 
             // act
             var result = _compiler.CompileDispatcher(typeof(TwoHandlers));
@@ -141,13 +141,13 @@ namespace MiP.Gprc.Test
             result.GetMethod(nameof(TwoHandlers.Two)).GetCustomAttributes<AuthorizeAttribute>().Should().BeEquivalentTo(_methodTwoAttributes);
         }
 
-        private void FakeHandler<TRequest, TResponse, THandler>(string methodName, TRequest request, TResponse response, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
+        private void FakeHandler<TRequest, TResponse, THandler, TServiceBase>(string methodName, TRequest request, TResponse response, IReadOnlyCollection<AuthorizeAttribute> attributes = null)
             where THandler : IHandler<TRequest, TResponse>
         {
             attributes ??= new AuthorizeAttribute[0];
 
-            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TRequest), typeof(TResponse)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TRequest), typeof(TResponse)), typeof(THandler), attributes));
+            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TRequest), typeof(TResponse), typeof(TServiceBase)))
+                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TRequest), typeof(TResponse), typeof(TServiceBase)), typeof(THandler), attributes));
 
             A.CallTo(() => _dispatcher.Dispatch<TRequest, TResponse, THandler>(request, _callContext, methodName))
             .Returns(Task.FromResult(response));

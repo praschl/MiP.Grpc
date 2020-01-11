@@ -268,7 +268,7 @@ return typeof({Class});
                 var parameterType = parameters[0].ParameterType;
                 var returnType = returnTaskType.GetGenericArguments().Single(); // get the actual return type
 
-                var handlerMap = _handlerStore.FindHandlerMap(methodName, parameterType, returnType);
+                var handlerMap = _handlerStore.FindHandlerMap(methodName, parameterType, returnType, serviceBase);
                 if (handlerMap == null)
                 {
                     if (returnType != typeof(void))

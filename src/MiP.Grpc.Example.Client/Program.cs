@@ -73,6 +73,14 @@ namespace MiP.Grpc.Example.Client
                 var calcResult = await calc.AddAsync(new AddRequest { A = 2, B = 3 });
                 Console.WriteLine("Added: " + calcResult.Res);
                 await Task.Delay(200);
+
+                await client.DuplicateAsync(new Empty());
+                Console.WriteLine("DuplicateAsync for greeter called");
+                await Task.Delay(200);
+
+                await calc.DuplicateAsync(new Empty());
+                Console.WriteLine("DuplicateAsync for calc called");
+                await Task.Delay(200);
             }
             catch (Exception ex)
             {

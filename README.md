@@ -120,6 +120,17 @@ Priority of finding the name is
 3. Name of class without "Handler"
 4. Name of class
 
+#### Specifying the service type
+More than one service can be hosted in the same process. By convention, an implementation will automatically handle the matching method of any service. However, it may be possible that two or more of the hosted services have a method with the same name, request type and result type, lets say
+```csharp
+Task<string> GetLastError(Google.Protobuf.WellKnownTypes.Empty, ...);
+```
+You will probably want two different implementations, one for each hosted service. To specify the service that is handled by a specific implementation, add the ServiceBase Property to the `HandlesAttribute`:
+```csharp
+[Handles(ServiceBase = typeof(MyService.ServiceBase))]
+```
+When not specified, the class or method can be used for any service. When two implementations are discovered and both do not specify the `ServiceBase`, the last one discovered will be used for both services.
+
 #### Add assembly types
 ```csharp
 services.AddDispatchedGrpcHandlers(builder =>
