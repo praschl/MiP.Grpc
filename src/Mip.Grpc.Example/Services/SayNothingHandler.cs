@@ -10,9 +10,7 @@ namespace Mip.Grpc.Example
     {
         public Task<Empty> RunAsync(Empty request, ServerCallContext context)
         {
-            Console.WriteLine("SAY NOTHING called: " + context.Host);
-
-            return Task.FromResult(new Empty());
+            throw new InvalidOperationException("This handler should not be called because overridden by AlternativeSayNothingHandler!");
         }
     }
 }

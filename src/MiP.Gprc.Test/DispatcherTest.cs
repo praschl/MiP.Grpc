@@ -36,7 +36,7 @@ namespace MiP.Gprc.Test
             const string expected = nameof(Dispatch_calls_handlers_RunAsync_and_returns_result) + " 1234";
 
             // act
-            var result = await _dispatcher.Dispatch<int, string, IntStringHandler>(1234, callContext, "IntString");
+            var result = await _dispatcher.Dispatch<int, string, IntStringHandler>(1234, callContext, "IntString").ConfigureAwait(false);
 
             // assert
             result.Should().Be(expected);
@@ -49,7 +49,7 @@ namespace MiP.Gprc.Test
             A.CallTo(() => _serviceProvider.GetService(typeof(IntStringHandler))).Returns(null);
 
             // act
-            Func<Task> dispatch = async () => await _dispatcher.Dispatch<int, string, IntStringHandler>(1, null, null);
+            Func<Task> dispatch = async () => await _dispatcher.Dispatch<int, string, IntStringHandler>(1, null, null).ConfigureAwait(false);
 
             // assert
             dispatch.Should().ThrowExactly<InvalidOperationException>().WithMessage($"No service for type '{typeof(IntStringHandler).FullName}' has been registered.");

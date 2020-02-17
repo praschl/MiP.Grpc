@@ -11,7 +11,7 @@ namespace MiP.Grpc
     public interface IHandler<TRequest, TResponse>
     {
         /// <summary>
-        /// Runs the command or query, passes the <paramref name="request"/> and <paramref name="context"/> and returns the result of the method.
+        /// Runs the query, passes the <paramref name="request"/> and <paramref name="context"/> and returns the result of the method.
         /// </summary>
         /// <param name="request">The request parameter.</param>
         /// <param name="context">The <see cref="ServerCallContext"/>.</param>

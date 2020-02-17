@@ -146,8 +146,8 @@ namespace MiP.Gprc.Test
         {
             attributes ??= new AuthorizeAttribute[0];
 
-            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TRequest), typeof(TResponse), typeof(TServiceBase)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TRequest), typeof(TResponse), typeof(TServiceBase)), typeof(THandler), attributes));
+            A.CallTo(() => _handler.Find(typeof(TServiceBase), typeof(IHandler<TRequest, TResponse>), methodName))
+                .Returns(new HandlerInfo(typeof(THandler), attributes));
 
             A.CallTo(() => _dispatcher.Dispatch<TRequest, TResponse, THandler>(request, _callContext, methodName))
             .Returns(Task.FromResult(response));

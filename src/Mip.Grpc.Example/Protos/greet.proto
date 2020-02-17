@@ -9,26 +9,31 @@ package greet;
 service Greeter {
   rpc SayHello (HelloRequest) returns (HelloReply);
   rpc SayHowdy (HowdyRequest) returns (HowdyReply);
-
+  
   // two methods with Empty / Empty should be supported
   rpc SayNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc AskNothing (google.protobuf.Empty) returns (google.protobuf.Empty);
   rpc SayRandom (google.protobuf.Empty) returns (google.protobuf.Empty);
-
+  
   // commands
   rpc SayOne (OneCommand) returns (google.protobuf.Empty);
   rpc SayTwo (google.protobuf.Empty) returns (google.protobuf.Empty);
-
+    
   // a command that exists with same signature in other service
   rpc Duplicate (google.protobuf.Empty) returns (google.protobuf.Empty);
+
+  // stream
+  rpc SentenceToWords (SentenceMessage) returns (stream WordMessage);
+  rpc WordsToSentence (stream WordMessage) returns (SentenceMessage);
+  rpc ReverseWords(stream WordMessage) returns (stream ReverseWordMessage);
 }
 
 message HelloRequest {
-  string name = 1;
+    string name = 1;
 }
 
 message HelloReply {
-  string message = 1;
+    string message = 1;
 }
 
 message HowdyRequest {
@@ -43,4 +48,16 @@ message HowdyReply {
 
 message OneCommand {
     string one = 1;
+}
+
+message SentenceMessage {
+    string sentence = 1;
+}
+
+message WordMessage {
+    string word = 1;
+}
+
+message ReverseWordMessage {
+    string word = 1;
 }

@@ -5,7 +5,6 @@ using Grpc.Core.Testing;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MiP.Grpc;
-using MiP.Grpc.Internal;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -147,10 +146,14 @@ namespace MiP.Gprc.Test
         {
             attributes ??= new AuthorizeAttribute[0];
 
-            A.CallTo(() => _handler.FindHandlerMap(methodName, typeof(TCommand), typeof(Protobuf.Empty), typeof(TServiceBase)))
-                .Returns(new DispatcherMap(new DispatcherMapKey(methodName, typeof(TCommand), typeof(void), typeof(TServiceBase)), typeof(THandler), attributes));
+            // first return null for the IHandler
+            A.CallTo(() => _handler.Find(typeof(TServiceBase), typeof(IHandler<TCommand, Protobuf.Empty>), methodName))
+                .Returns(null);
 
-            A.CallTo(() => _dispatcher.Dispatch<TCommand, Protobuf.Empty, CommandHandlerAdapter<TCommand, ICommandHandler<TCommand>>>(command, _callContext, methodName))
+            A.CallTo(() => _handler.Find(typeof(TServiceBase), typeof(ICommandHandler<TCommand>), methodName))
+                .Returns(new HandlerInfo(typeof(THandler), attributes));
+
+            A.CallTo(() => _dispatcher.Dispatch<TCommand, Protobuf.Empty, ICommandHandlerAdapter<TCommand, THandler>>(command, _callContext, methodName))
                 .Returns(Task.FromResult(new Protobuf.Empty()));
         }
 
